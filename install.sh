@@ -42,13 +42,11 @@ INSTALL_DIR="/usr/local/hostingsignal"
 log_step "Cloning HostingSignal from GitHub to $INSTALL_DIR..."
 apt-get install -y git
 if [ -d "$INSTALL_DIR" ]; then
-    log_warn "Directory $INSTALL_DIR already exists. Updating..."
-    cd "$INSTALL_DIR"
-    git pull origin main || log_warn "Git pull failed, continuing anyway..."
-else
-    git clone https://github.com/limbanidhairya/hostingsignal.git "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
+    log_warn "Directory $INSTALL_DIR already exists. Purging old files to ensure a clean install..."
+    rm -rf "$INSTALL_DIR"
 fi
+git clone https://github.com/limbanidhairya/hostingsignal.git "$INSTALL_DIR"
+cd "$INSTALL_DIR"
 
 # 3. Run Underlying Dependency Installer
 if [ -f "$INSTALL_DIR/installer/setup_ubuntu.sh" ]; then

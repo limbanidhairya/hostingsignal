@@ -58,7 +58,11 @@ log_info "OpenLiteSpeed installed"
 # PHP (lsphp 8.1 + 8.2 & PHP 8.2)
 log_step "Installing PHP..."
 export LC_ALL=C.UTF-8
-add-apt-repository ppa:ondrej/php -y || log_warn "Failed to add PPA via add-apt-repository, continuing..."
+if ! add-apt-repository ppa:ondrej/php -y; then
+    log_warn "Failed to add PPA via add-apt-repository. Attempting manual curl method..."
+    curl -sS https://packages.sury.org/php/apt.gpg | tee /etc/apt/trusted.gpg.d/php.gpg > /dev/null
+    echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
+fi
 apt-get update -y
 apt-get install -y lsphp81 lsphp81-common lsphp81-mysql lsphp81-curl lsphp81-json \
     lsphp82 lsphp82-common lsphp82-mysql lsphp82-curl 2>/dev/null || \
