@@ -112,13 +112,6 @@ apt-get install -y firewalld
 systemctl enable --now firewalld
 log_info "FirewallD installed"
 
-# Docker (optional)
-log_step "Installing Docker..."
-if ! command -v docker &>/dev/null; then
-    curl -fsSL https://get.docker.com | bash
-    systemctl enable --now docker
-fi
-log_info "Docker installed"
 
 # phpMyAdmin
 log_step "Installing phpMyAdmin..."
