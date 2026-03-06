@@ -55,8 +55,10 @@ if ! command -v /usr/local/lsws/bin/lswsctrl &>/dev/null; then
 fi
 log_info "OpenLiteSpeed installed"
 
-# PHP (lsphp 8.1 + 8.2)
+# PHP (lsphp 8.1 + 8.2 & PHP 8.2)
 log_step "Installing PHP..."
+add-apt-repository ppa:ondrej/php -y
+apt-get update -y
 apt-get install -y lsphp81 lsphp81-common lsphp81-mysql lsphp81-curl lsphp81-json \
     lsphp82 lsphp82-common lsphp82-mysql lsphp82-curl 2>/dev/null || \
     apt-get install -y php8.2-fpm php8.2-mysql php8.2-curl php8.2-gd php8.2-mbstring php8.2-xml
