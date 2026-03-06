@@ -26,6 +26,8 @@ async def lifespan(app: FastAPI):
     from app.models.user import User, UserRole
     from app.core.security import hash_password
     from sqlalchemy import select
+    import os
+    import secrets
 
     async with async_session() as session:
         result = await session.execute(
@@ -33,17 +35,20 @@ async def lifespan(app: FastAPI):
         )
         admin = result.scalar_one_or_none()
         if not admin:
+            # Check env var for initial password, default to a random strong string if not provided
+            initial_password = os.environ.get("ADMIN_PASSWORD", "".join(secrets.choice("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") for _ in range(12)))
+            
             admin_user = User(
                 email="admin@hostingsignal.com",
-                name="Dhairya Limbani",
-                hashed_password=hash_password("admin123"),
+                name="HostingSignal Admin",
+                hashed_password=hash_password(initial_password),
                 role=UserRole.ADMIN,
                 is_active=True,
                 is_verified=True,
             )
             session.add(admin_user)
             await session.commit()
-            print("👤 Default admin user created (admin@hostingsignal.com / admin123)")
+            print(f"👤 Default admin user created (admin@hostingsignal.com / {initial_password})")
         else:
             print(f"👤 Admin user exists: {admin.email}")
 
