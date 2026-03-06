@@ -1,8 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 class ApiClient {
     constructor() {
-        this.baseUrl = API_BASE;
+        this.baseUrl = typeof window !== 'undefined'
+            ? (process.env.NEXT_PUBLIC_API_URL || `${window.location.protocol}//${window.location.hostname}:8000`)
+            : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
     }
 
     getToken() {
