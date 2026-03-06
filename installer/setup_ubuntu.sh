@@ -38,10 +38,10 @@ apt-get install -y curl wget git unzip tar software-properties-common gnupg2 \
 log_step "Installing Python..."
 apt-get install -y python3 python3-pip python3-venv python3-dev
 
-# Node.js 18 LTS
-log_step "Installing Node.js 18..."
-if ! command -v node &>/dev/null || [ "$(node -v | cut -d. -f1 | tr -d v)" -lt 18 ]; then
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+# Node.js 22 LTS
+log_step "Installing Node.js 22..."
+if ! command -v node &>/dev/null || [ "$(node -v | cut -d. -f1 | tr -d v)" -lt 20 ]; then
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
     apt-get install -y nodejs
 fi
 log_info "Node.js $(node -v)"
