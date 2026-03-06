@@ -57,7 +57,8 @@ log_info "OpenLiteSpeed installed"
 
 # PHP (lsphp 8.1 + 8.2 & PHP 8.2)
 log_step "Installing PHP..."
-add-apt-repository ppa:ondrej/php -y
+export LC_ALL=C.UTF-8
+add-apt-repository ppa:ondrej/php -y || log_warn "Failed to add PPA via add-apt-repository, continuing..."
 apt-get update -y
 apt-get install -y lsphp81 lsphp81-common lsphp81-mysql lsphp81-curl lsphp81-json \
     lsphp82 lsphp82-common lsphp82-mysql lsphp82-curl 2>/dev/null || \
