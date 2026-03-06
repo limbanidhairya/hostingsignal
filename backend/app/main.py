@@ -87,10 +87,10 @@ async def license_check_middleware(request: Request, call_next):
 
     return await call_next(request)
 
-# CORS
+# CORS (Allow all domains/IPs for the control panel frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
