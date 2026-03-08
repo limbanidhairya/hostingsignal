@@ -1,0 +1,27 @@
+
+antigravity-awesome-skills ΓÇö installer
+
+  npx antigravity-awesome-skills [install] [options]
+
+  Clones the skills repo into your agent's skills directory.
+
+Options:
+  --cursor       Install to ~/.cursor/skills (Cursor)
+  --claude       Install to ~/.claude/skills (Claude Code)
+  --gemini       Install to ~/.gemini/skills (Gemini CLI)
+  --codex        Install to ~/.codex/skills (Codex CLI)
+  --kiro         Install to ~/.kiro/skills (Kiro CLI)
+  --antigravity  Install to ~/.gemini/antigravity/skills (Antigravity)
+  --path <dir>   Install to <dir> (default: ~/.gemini/antigravity/skills)
+  --version <ver>  After clone, checkout tag v<ver> (e.g. 4.6.0 -> v4.6.0)
+  --tag <tag>      After clone, checkout this tag (e.g. v4.6.0)
+
+Examples:
+  npx antigravity-awesome-skills
+  npx antigravity-awesome-skills --cursor
+  npx antigravity-awesome-skills --kiro
+  npx antigravity-awesome-skills --antigravity
+  npx antigravity-awesome-skills --version 4.6.0
+  npx antigravity-awesome-skills --path ./my-skills
+  npx antigravity-awesome-skills --claude --codex    Install to multiple targets
+

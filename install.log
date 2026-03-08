@@ -1,0 +1,82 @@
+Cloning repositoryΓÇª
+Cloning into 'C:\Users\DHAIRY~1\AppData\Local\Temp\ag-skills-rHsD2o'...
+error: unable to create symlink skills/dbos-golang/CLAUDE.md: Permission denied
+error: unable to create symlink skills/dbos-python/CLAUDE.md: Permission denied
+error: unable to create symlink skills/dbos-typescript/CLAUDE.md: Permission denied
+error: unable to create symlink skills/docx: Permission denied
+Updating files:  35% (1414/3985)
+Updating files:  36% (1435/3985)
+Updating files:  37% (1475/3985)
+Updating files:  38% (1515/3985)
+Updating files:  39% (1555/3985)
+Updating files:  40% (1594/3985)
+Updating files:  41% (1634/3985)
+Updating files:  42% (1674/3985)
+Updating files:  43% (1714/3985)
+Updating files:  44% (1754/3985)
+Updating files:  45% (1794/3985)
+Updating files:  46% (1834/3985)
+Updating files:  47% (1873/3985)
+Updating files:  48% (1913/3985)
+Updating files:  49% (1953/3985)
+Updating files:  50% (1993/3985)
+Updating files:  51% (2033/3985)
+Updating files:  52% (2073/3985)
+Updating files:  53% (2113/3985)
+Updating files:  54% (2152/3985)
+Updating files:  55% (2192/3985)
+Updating files:  56% (2232/3985)
+Updating files:  57% (2272/3985)
+Updating files:  58% (2312/3985)
+Updating files:  59% (2352/3985)
+Updating files:  60% (2391/3985)
+Updating files:  61% (2431/3985)
+Updating files:  62% (2471/3985)
+Updating files:  63% (2511/3985)
+Updating files:  64% (2551/3985)
+Updating files:  65% (2591/3985)
+Updating files:  66% (2631/3985)
+Updating files:  67% (2670/3985)
+Updating files:  68% (2710/3985)
+Updating files:  69% (2750/3985)
+Updating files:  70% (2790/3985)
+Updating files:  71% (2830/3985)
+Updating files:  72% (2870/3985)
+Updating files:  73% (2910/3985)
+Updating files:  74% (2949/3985)
+Updating files:  75% (2989/3985)
+Updating files:  75% (3022/3985)
+Updating files:  76% (3029/3985)
+error: unable to create symlink skills/pdf: Permission denied
+Updating files:  77% (3069/3985)
+Updating files:  78% (3109/3985)
+error: unable to create symlink skills/pptx: Permission denied
+Updating files:  79% (3149/3985)
+Updating files:  80% (3188/3985)
+Updating files:  81% (3228/3985)
+Updating files:  82% (3268/3985)
+Updating files:  83% (3308/3985)
+Updating files:  84% (3348/3985)
+Updating files:  85% (3388/3985)
+Updating files:  86% (3428/3985)
+Updating files:  87% (3467/3985)
+Updating files:  88% (3507/3985)
+Updating files:  89% (3547/3985)
+Updating files:  90% (3587/3985)
+Updating files:  91% (3627/3985)
+Updating files:  92% (3667/3985)
+Updating files:  93% (3707/3985)
+Updating files:  94% (3746/3985)
+Updating files:  95% (3786/3985)
+Updating files:  96% (3826/3985)
+Updating files:  97% (3866/3985)
+Updating files:  98% (3906/3985)
+error: unable to create symlink skills/xlsx: Permission denied
+Updating files:  99% (3946/3985)
+Updating files: 100% (3985/3985)
+Updating files: 100% (3985/3985), done.
+fatal: unable to checkout working tree
+warning: Clone succeeded, but checkout failed.
+You can inspect what was checked out with 'git status'
+and retry with 'git restore --source=HEAD :/'
+
