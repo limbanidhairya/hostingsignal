@@ -1,0 +1,26 @@
+[Unit]
+Description=HostingSignal Next.js Frontend Web Server
+Documentation=https://docs.hostingsignal.com
+After=network.target hostingsignal-api.service
+Wants=hostingsignal-api.service
+
+[Service]
+Type=exec
+User=root
+Group=root
+WorkingDirectory=/usr/local/hostingsignal/frontend
+Environment="NODE_ENV=production"
+Environment="PORT=3000"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/npm start
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hostingsignal-web
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

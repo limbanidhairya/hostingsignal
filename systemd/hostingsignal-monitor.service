@@ -1,0 +1,24 @@
+[Unit]
+Description=HostingSignal System Monitor Service
+Documentation=https://docs.hostingsignal.com
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=exec
+User=root
+Group=root
+WorkingDirectory=/usr/local/hostingsignal/backend
+Environment="PATH=/usr/local/hostingsignal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONPATH=/usr/local/hostingsignal/backend"
+ExecStart=/usr/local/hostingsignal/backend/venv/bin/python -m app.daemon.monitor_daemon
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hostingsignal-monitor
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1 @@
+# HostingSignal License Server

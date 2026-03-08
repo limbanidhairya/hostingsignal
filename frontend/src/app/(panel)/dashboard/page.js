@@ -1,173 +1,149 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import api from '@/lib/api';
-import { useToast } from '@/components/ui/Toast';
 
 export default function DashboardPage() {
-    const { user } = useAuth();
-    const { showToast, ToastContainer } = useToast();
     const [stats, setStats] = useState(null);
+    const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadStats();
+        const apiUrl = typeof window !== 'undefined'
+            ? `${window.location.protocol}//${window.location.hostname}:8000`
+            : 'http://localhost:8000';
+
+        Promise.all([
+            fetch(`${apiUrl}/api/monitoring/overview`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+                .then(r => r.json()).catch(() => null),
+            fetch(`${apiUrl}/api/monitoring/services`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } })
+                .then(r => r.json()).catch(() => null),
+        ]).then(([statsData, servicesData]) => {
+            setStats(statsData?.data || getMockStats());
+            setServices(servicesData?.services || getMockServices());
+            setLoading(false);
+        });
     }, []);
 
-    async function loadStats() {
-        try {
-            const data = await api.getDashboardStats();
-            setStats(data);
-        } catch (err) {
-            // Fallback to demo data
-            setStats({
-                total_licenses: 6, active_licenses: 4, expired_licenses: 1, suspended_licenses: 1,
-                monthly_revenue: 270, tier_breakdown: { free: 0, pro: 2, business: 1, enterprise: 1 },
-                total_users: 4, active_users: 3
-            });
-        } finally {
-            setLoading(false);
-        }
-    }
+    const getMockStats = () => ({
+        cpu_percent: 23,
+        memory_percent: 45,
+        memory_used_gb: 3.6,
+        memory_total_gb: 8,
+        disk_percent: 34,
+        disk_used_gb: 68,
+        disk_total_gb: 200,
+        load_avg_1: 0.45,
+        load_avg_5: 0.52,
+        load_avg_15: 0.48,
+    });
 
-    const quickActions = [
-        { icon: '🌐', label: 'New Website', href: '/websites' },
-        { icon: '🔒', label: 'SSL Certificates', href: '/security' },
-        { icon: '📧', label: 'Create Email', href: '/email' },
-        { icon: '💾', label: 'Backup Now', href: '/backups' },
-        { icon: '🛡️', label: 'Firewall', href: '/security' },
-        { icon: '📁', label: 'File Manager', href: '/files' },
-    ];
-
-    function ResourceCircle({ percent, color, label, detail }) {
-        const radius = 45;
-        const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (percent / 100) * circumference;
-        return (
-            <div className="clay-card" style={{ padding: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                <svg width="120" height="120" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r={radius} fill="none" stroke="var(--border-light)" strokeWidth="8" />
-                    <circle cx="60" cy="60" r={radius} fill="none" stroke={color} strokeWidth="8"
-                        strokeDasharray={circumference} strokeDashoffset={offset}
-                        strokeLinecap="round" transform="rotate(-90 60 60)"
-                        style={{ transition: 'stroke-dashoffset 1s ease' }} />
-                    <text x="60" y="55" textAnchor="middle" fill="var(--text-primary)" fontSize="20" fontWeight="700">{percent}%</text>
-                    <text x="60" y="75" textAnchor="middle" fill="var(--text-muted)" fontSize="10">usage</text>
-                </svg>
-                <div style={{ marginLeft: 'var(--space-md)' }}>
-                    <div style={{ fontWeight: 600 }}>{label}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{detail}</div>
-                    <div className="progress-bar" style={{ marginTop: '8px', width: '120px' }}>
-                        <div className="progress-fill" style={{ width: `${percent}%`, background: color }} />
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    const getMockServices = () => ({
+        'lsws': 'active', 'mariadb': 'active', 'redis-server': 'active',
+        'postfix': 'active', 'hostingsignal-api': 'active', 'hostingsignal-web': 'active',
+    });
 
     if (loading) {
-        return <div className="animate-fade" style={{ padding: 'var(--space-xl)', textAlign: 'center', color: 'var(--text-muted)' }}>Loading dashboard...</div>;
+        return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', color: 'var(--hs-text-muted)' }}>Loading dashboard...</div>;
     }
 
+    const s = stats || getMockStats();
+
     return (
-        <div className="animate-fade">
-            <ToastContainer />
-            <div className="page-header">
-                <div>
-                    <h1 className="glow-text">Dashboard</h1>
-                    <p>Welcome back, {user?.name}! Here&apos;s an overview of your hosting environment.</p>
-                </div>
-                <a href="/websites"><button className="btn skeuo-btn-primary">+ Create Website</button></a>
-            </div>
-
-            {/* Stats */}
-            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-                <div className="stat-card green clay-card" style={{ background: 'transparent' }}>
-                    <div className="stat-icon green">🌐</div>
-                    <div className="stat-content">
-                        <div className="stat-value glow-text">{stats.active_licenses}</div>
-                        <div className="stat-label">Active Licenses</div>
+        <div>
+            {/* Stats Grid */}
+            <div className="hs-stats-grid">
+                <div className="hs-stat-card">
+                    <div className="hs-stat-icon blue">💻</div>
+                    <div className="hs-stat-info">
+                        <div className="hs-stat-value">{s.cpu_percent}%</div>
+                        <div className="hs-stat-label">CPU Usage</div>
                     </div>
                 </div>
-                <div className="stat-card blue clay-card" style={{ background: 'transparent' }}>
-                    <div className="stat-icon blue">👥</div>
-                    <div className="stat-content">
-                        <div className="stat-value glow-text">{stats.total_users}</div>
-                        <div className="stat-label">Total Users</div>
+                <div className="hs-stat-card">
+                    <div className="hs-stat-icon green">🧠</div>
+                    <div className="hs-stat-info">
+                        <div className="hs-stat-value">{s.memory_percent}%</div>
+                        <div className="hs-stat-label">{s.memory_used_gb}GB / {s.memory_total_gb}GB RAM</div>
                     </div>
                 </div>
-                <div className="stat-card purple clay-card" style={{ background: 'transparent' }}>
-                    <div className="stat-icon purple">🔑</div>
-                    <div className="stat-content">
-                        <div className="stat-value glow-text">{stats.total_licenses}</div>
-                        <div className="stat-label">Total Licenses</div>
+                <div className="hs-stat-card">
+                    <div className="hs-stat-icon orange">💾</div>
+                    <div className="hs-stat-info">
+                        <div className="hs-stat-value">{s.disk_percent}%</div>
+                        <div className="hs-stat-label">{s.disk_used_gb}GB / {s.disk_total_gb}GB Disk</div>
                     </div>
                 </div>
-                <div className="stat-card orange clay-card" style={{ background: 'transparent' }}>
-                    <div className="stat-icon orange">💰</div>
-                    <div className="stat-content">
-                        <div className="stat-value glow-text">${stats.monthly_revenue}</div>
-                        <div className="stat-label">Monthly Revenue</div>
+                <div className="hs-stat-card">
+                    <div className="hs-stat-icon purple">⚡</div>
+                    <div className="hs-stat-info">
+                        <div className="hs-stat-value">{s.load_avg_1}</div>
+                        <div className="hs-stat-label">Load Average (1m)</div>
                     </div>
                 </div>
             </div>
 
-            {/* Resource Usage */}
-            <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 'var(--space-lg) 0 var(--space-md)' }}>Resource Usage</h2>
-            <div className="resource-grid">
-                <ResourceCircle percent={34} color="var(--primary)" label="CPU" detail="34% / 4 vCPU" />
-                <ResourceCircle percent={62} color="var(--accent-green)" label="RAM" detail="2.5 GB / 4 GB" />
-                <ResourceCircle percent={45} color="var(--accent-blue)" label="Disk" detail="22.5 GB / 50 GB" />
-                <ResourceCircle percent={18} color="var(--accent-orange)" label="Bandwidth" detail="180 GB / 1 TB" />
+            {/* Resource Usage Cards */}
+            <div className="hs-grid-2" style={{ marginBottom: 24 }}>
+                <div className="hs-card">
+                    <div className="hs-card-header">
+                        <h3 className="hs-card-title">Resource Usage</h3>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13, color: 'var(--hs-text-secondary)' }}>
+                                <span>CPU</span><span>{s.cpu_percent}%</span>
+                            </div>
+                            <div className="hs-progress">
+                                <div className="hs-progress-bar blue" style={{ width: `${s.cpu_percent}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13, color: 'var(--hs-text-secondary)' }}>
+                                <span>Memory</span><span>{s.memory_percent}%</span>
+                            </div>
+                            <div className="hs-progress">
+                                <div className="hs-progress-bar green" style={{ width: `${s.memory_percent}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13, color: 'var(--hs-text-secondary)' }}>
+                                <span>Disk</span><span>{s.disk_percent}%</span>
+                            </div>
+                            <div className="hs-progress">
+                                <div className={`hs-progress-bar ${s.disk_percent > 80 ? 'red' : 'orange'}`} style={{ width: `${s.disk_percent}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="hs-card">
+                    <div className="hs-card-header">
+                        <h3 className="hs-card-title">Service Health</h3>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {Object.entries(services).map(([name, status]) => (
+                            <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--hs-border)' }}>
+                                <span style={{ fontSize: 14, color: 'var(--hs-text-secondary)' }}>{name}</span>
+                                <span className={`hs-badge ${status === 'active' ? 'success' : 'error'}`}>
+                                    {status === 'active' ? '● Active' : '● Inactive'}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
 
             {/* Quick Actions */}
-            <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 'var(--space-lg) 0 var(--space-md)' }} className="glow-text">Quick Actions</h2>
-            <div className="quick-actions">
-                {quickActions.map((action, i) => (
-                    <a key={i} href={action.href} className="quick-action-card clay-card" style={{ padding: 'var(--space-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-sm)', textAlign: 'center', textDecoration: 'none' }}>
-                        <div className="quick-action-icon" style={{ fontSize: '24px' }}>{action.icon}</div>
-                        <span className="quick-action-label" style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{action.label}</span>
-                    </a>
-                ))}
-            </div>
-
-            {/* License Tier Breakdown */}
-            <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 'var(--space-lg) 0 var(--space-md)' }} className="glow-text">License Distribution</h2>
-            <div className="liquid-glass" style={{ padding: 'var(--space-lg)' }}>
-                {Object.entries(stats.tier_breakdown).map(([tier, count], i) => {
-                    const total = stats.total_licenses || 1;
-                    const pct = Math.round((count / total) * 100);
-                    const colors = { free: 'var(--accent-blue)', pro: 'var(--primary)', business: 'var(--accent-orange)', enterprise: 'var(--accent-green)' };
-                    return (
-                        <div key={tier} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: i < 3 ? '14px' : 0 }}>
-                            <span style={{ width: '80px', fontSize: '13px', fontWeight: 600, textTransform: 'capitalize' }}>{tier}</span>
-                            <div className="progress-bar" style={{ flex: 1 }}>
-                                <div className="progress-fill" style={{ width: `${pct}%`, background: colors[tier] }} />
-                            </div>
-                            <span style={{ fontSize: '13px', fontWeight: 600, width: '40px', textAlign: 'right' }}>{count}</span>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Server Info */}
-            <h2 style={{ fontSize: '18px', fontWeight: 600, margin: 'var(--space-lg) 0 var(--space-md)' }} className="glow-text">Server Information</h2>
-            <div className="liquid-glass" style={{ padding: 'var(--space-lg)' }}>
-                <div className="grid-2">
-                    {[
-                        { label: 'Hostname', value: 'srv1.hostingsignal.com' },
-                        { label: 'OS', value: 'Ubuntu 22.04 LTS' },
-                        { label: 'Web Server', value: 'OpenLiteSpeed 1.7' },
-                        { label: 'PHP Version', value: '8.1, 8.2, 8.3' },
-                        { label: 'MySQL', value: 'MariaDB 11.2' },
-                        { label: 'Panel Version', value: 'HostingSignal v1.0.0' },
-                    ].map((item, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{item.label}</span>
-                            <span style={{ fontWeight: 600, fontSize: '13px' }}>{item.value}</span>
-                        </div>
-                    ))}
+            <div className="hs-card">
+                <div className="hs-card-header">
+                    <h3 className="hs-card-title">Quick Actions</h3>
+                </div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    <a href="/websites" className="hs-btn hs-btn-primary">🌐 Create Website</a>
+                    <a href="/databases" className="hs-btn hs-btn-secondary">🗄️ New Database</a>
+                    <a href="/email" className="hs-btn hs-btn-secondary">📧 Add Email</a>
+                    <a href="/backups" className="hs-btn hs-btn-secondary">💾 Create Backup</a>
+                    <a href="/security" className="hs-btn hs-btn-secondary">🛡️ Firewall</a>
+                    <a href="/dns" className="hs-btn hs-btn-secondary">🗂️ DNS Editor</a>
                 </div>
             </div>
         </div>

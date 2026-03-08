@@ -1,0 +1,222 @@
+# Kubernetes Deployment — HostingSignal Panel
+# Apply: kubectl apply -f k8s-deployment.yml
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hostingsignal
+
+---
+# Backend API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hs-backend
+  namespace: hostingsignal
+  labels:
+    app: hostingsignal
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hostingsignal
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: hostingsignal
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: hostingsignal/backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hs-secrets
+                  key: database-url
+            - name: REDIS_URL
+              value: redis://hs-redis:6379/0
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: hs-backend
+  namespace: hostingsignal
+spec:
+  selector:
+    app: hostingsignal
+    component: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hs-frontend
+  namespace: hostingsignal
+  labels:
+    app: hostingsignal
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hostingsignal
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: hostingsignal
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: hostingsignal/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: http://hs-backend:8000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: hs-frontend
+  namespace: hostingsignal
+spec:
+  selector:
+    app: hostingsignal
+    component: frontend
+  ports:
+    - port: 3000
+      targetPort: 3000
+
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hs-redis
+  namespace: hostingsignal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hostingsignal
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: hostingsignal
+        component: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: hs-redis
+  namespace: hostingsignal
+spec:
+  selector:
+    app: hostingsignal
+    component: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hs-ingress
+  namespace: hostingsignal
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - panel.hostingsignal.com
+      secretName: hs-tls
+  rules:
+    - host: panel.hostingsignal.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: hs-backend
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hs-frontend
+                port:
+                  number: 3000
+
+---
+# Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hs-secrets
+  namespace: hostingsignal
+type: Opaque
+stringData:
+  database-url: "sqlite+aiosqlite:///./hostingsignal.db"
+  jwt-secret: "change-me-in-production"
+  admin-password: "change-me"

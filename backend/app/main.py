@@ -12,6 +12,18 @@ from app.api.licenses import router as licenses_router
 from app.api.admin import router as admin_router
 from app.api.cyberpanel import router as cyberpanel_router
 from app.api.server_api import router as server_router
+from app.api.websites import router as websites_router
+from app.api.monitoring import router as monitoring_router
+from app.api.domains import router as domains_router
+from app.api.dns import router as dns_router
+from app.api.databases import router as databases_router
+from app.api.email import router as email_router
+from app.api.backups import router as backups_router
+from app.api.security import router as security_router
+from app.api.cluster import router as cluster_router
+from app.api.php_manager import router as php_manager_router
+from app.api.setup_wizard import router as setup_wizard_router
+from app.monitoring.api import router as ai_monitoring_router
 
 
 @asynccontextmanager
@@ -96,12 +108,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount routers
+# Mount routers — Original
 app.include_router(auth_router)
 app.include_router(licenses_router)
 app.include_router(admin_router)
 app.include_router(cyberpanel_router)
 app.include_router(server_router)
+
+# Mount routers — New modules
+app.include_router(websites_router)
+app.include_router(monitoring_router)
+app.include_router(domains_router)
+app.include_router(dns_router)
+app.include_router(databases_router)
+app.include_router(email_router)
+app.include_router(backups_router)
+app.include_router(security_router)
+app.include_router(cluster_router)
+app.include_router(php_manager_router)
+app.include_router(setup_wizard_router)
+app.include_router(ai_monitoring_router)
 
 
 @app.get("/api/health")

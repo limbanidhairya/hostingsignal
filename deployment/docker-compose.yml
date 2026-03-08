@@ -1,0 +1,112 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hostingsignal
+      POSTGRES_USER: hostingsignal
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U hostingsignal" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ───────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: hs-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── RabbitMQ ────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: hs-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: hostingsignal
+      RABBITMQ_DEFAULT_PASS: ${MQ_PASSWORD:-changeme}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # ── License Server ─────────────────────────────────────
+  license-server:
+    build:
+      context: ./license-server
+      dockerfile: Dockerfile
+    container_name: hs-license-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://hostingsignal:${DB_PASSWORD:-changeme}@postgres:5432/hostingsignal_licenses
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET:-change-me-in-production}
+      MASTER_API_KEY: ${MASTER_API_KEY:-hs-master-key}
+    ports:
+      - "8443:8443"
+
+  # ── Panel Backend API ──────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hs-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./hostingsignal.db
+      REDIS_URL: redis://redis:6379/1
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_data:/usr/local/hostingsignal/backend/data
+      - /home:/home
+
+  # ── Panel Frontend ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hs-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  pg_data:
+  redis_data:
+  rabbitmq_data:
+  backend_data:

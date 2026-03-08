@@ -1,0 +1,55 @@
+# HostingSignal Panel Configuration
+# Location: /etc/hostingsignal/panel.yml
+
+panel:
+  name: "HostingSignal"
+  version: "1.0.0"
+  domain: ""
+  admin_email: "admin@hostingsignal.com"
+
+server:
+  api_host: "0.0.0.0"
+  api_port: 8000
+  web_port: 3000
+  workers: 4
+
+database:
+  type: "sqlite"  # sqlite | postgresql
+  url: "sqlite+aiosqlite:///./hostingsignal.db"
+
+redis:
+  url: "redis://localhost:6379/0"
+
+security:
+  jwt_secret: "change-me-in-production"
+  session_timeout: 3600
+  max_login_attempts: 5
+  lockout_duration: 300
+
+ssl:
+  auto_renew: true
+  provider: "letsencrypt"
+  email: "admin@hostingsignal.com"
+
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention_days: 30
+  destination: "local"
+  path: "/var/backups/hostingsignal"
+
+monitoring:
+  enabled: true
+  interval: 5
+  history_retention: "7d"
+
+logging:
+  level: "info"
+  path: "/var/log/hostingsignal"
+  rotation: "weekly"
+  max_size: "100M"
+
+license:
+  server_url: "https://license.hostingsignal.com"
+  key: ""
+  check_interval: 86400

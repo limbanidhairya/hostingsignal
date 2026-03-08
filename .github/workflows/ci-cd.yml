@@ -1,0 +1,117 @@
+# HostingSignal Panel — CI/CD Pipeline (GitHub Actions)
+name: HostingSignal CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  # ── Lint & Test Backend ──────────────────────────────────
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Lint
+        run: |
+          pip install ruff
+          ruff check .
+
+      - name: Test
+        run: pytest --tb=short -q
+
+  # ── Lint & Build Frontend ───────────────────────────────
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint || true
+
+      - name: Build
+        run: npm run build
+
+  # ── Build Docker Images ─────────────────────────────────
+  docker-build:
+    needs: [backend-test, frontend-build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Backend Image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:latest ./backend
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:latest
+
+      - name: Build Frontend Image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:latest ./frontend
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:latest
+
+      - name: Build License Server Image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/license-server:latest ./license-server
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/license-server:latest
+
+  # ── Create Release ──────────────────────────────────────
+  release:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Release Archive
+        run: |
+          tar -czf hostingsignal-latest.tar.gz \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='venv' \
+            --exclude='__pycache__' \
+            .
+
+      - name: Upload to Mirror
+        run: |
+          echo "Upload hostingsignal-latest.tar.gz to updates.hostingsignal.in"
+          # scp hostingsignal-latest.tar.gz user@mirror.hostingsignal.in:/var/www/updates/

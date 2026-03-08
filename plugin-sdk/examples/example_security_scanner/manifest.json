@@ -1,0 +1,43 @@
+{
+    "name": "example_security_scanner",
+    "version": "1.0.0",
+    "description": "Scans websites for common security vulnerabilities",
+    "author": "HostingSignal Team",
+    "category": "security",
+    "min_panel_version": "1.0.0",
+    "entry_point": "main.py",
+    "hooks": [
+        "website.created",
+        "cron.daily"
+    ],
+    "ui_extensions": [
+        {
+            "type": "sidebar_item",
+            "label": "Security Scanner",
+            "icon": "🔍",
+            "route": "/plugins/security-scanner"
+        },
+        {
+            "type": "dashboard_widget",
+            "label": "Security Score",
+            "component": "SecurityScoreWidget"
+        }
+    ],
+    "api_routes": [
+        {
+            "method": "GET",
+            "path": "/api/plugins/security-scanner/scan/{domain}",
+            "handler": "scan_website"
+        },
+        {
+            "method": "GET",
+            "path": "/api/plugins/security-scanner/results",
+            "handler": "get_results"
+        }
+    ],
+    "permissions": [
+        "read_websites",
+        "read_ssl"
+    ],
+    "dependencies": []
+}

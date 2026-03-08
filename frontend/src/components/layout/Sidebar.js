@@ -1,82 +1,70 @@
 'use client';
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navSections = [
     {
-        title: 'Main',
+        title: 'Overview',
         items: [
-            { icon: '📊', label: 'Dashboard', href: '/dashboard' },
-            { icon: '🌐', label: 'Websites', href: '/websites', badge: '3' },
-            { icon: '🔗', label: 'Domains', href: '/domains' },
-        ]
+            { label: 'Dashboard', href: '/dashboard', icon: '📊' },
+            { label: 'Websites', href: '/websites', icon: '🌐' },
+            { label: 'Domains', href: '/domains', icon: '🔗' },
+        ],
     },
     {
         title: 'Services',
         items: [
-            { icon: '📧', label: 'Email', href: '/email' },
-            { icon: '🗄️', label: 'Databases', href: '/databases' },
-            { icon: '📁', label: 'File Manager', href: '/files' },
-        ]
+            { label: 'DNS', href: '/dns', icon: '🗂️' },
+            { label: 'Databases', href: '/databases', icon: '🗄️' },
+            { label: 'Email', href: '/email', icon: '📧' },
+            { label: 'PHP Manager', href: '/php-manager', icon: '🐘' },
+            { label: 'Docker', href: '/docker', icon: '🐳' },
+            { label: 'Files', href: '/files', icon: '📁' },
+        ],
     },
     {
-        title: 'Security & System',
+        title: 'System',
         items: [
-            { icon: '🔒', label: 'Security', href: '/security' },
-            { icon: '🌍', label: 'DNS Zone', href: '/dns' },
-            { icon: '💾', label: 'Backups', href: '/backups' },
-            { icon: '🧩', label: 'Plugins', href: '/plugins' },
-        ]
+            { label: 'Monitoring', href: '/monitoring', icon: '📈' },
+            { label: 'Backups', href: '/backups', icon: '💾' },
+            { label: 'Security', href: '/security', icon: '🛡️' },
+            { label: 'Plugins', href: '/plugins', icon: '🔌' },
+            { label: 'Settings', href: '/settings', icon: '⚙️' },
+            { label: 'License', href: '/license', icon: '🔑' },
+        ],
     },
-    {
-        title: 'Administration',
-        items: [
-            { icon: '🔑', label: 'Licenses', href: '/admin/licenses' },
-            { icon: '👥', label: 'Users', href: '/admin/users' },
-            { icon: '⚙️', label: 'Settings', href: '/settings' },
-        ]
-    }
 ];
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar() {
     const pathname = usePathname();
 
     return (
-        <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-            <div className="sidebar-logo">
+        <aside className="hs-sidebar">
+            <div className="hs-sidebar-logo">
                 <div className="logo-icon">HS</div>
-                <span className="logo-text">HostingSignal</span>
+                <div className="logo-text">HostingSignal</div>
             </div>
 
-            <nav className="sidebar-nav">
-                {navSections.map((section, si) => (
-                    <div key={si} className="nav-section">
-                        <div className="nav-section-title">{section.title}</div>
-                        {section.items.map((item, ii) => {
-                            const isActive = pathname === item.href ||
-                                (item.href !== '/dashboard' && pathname?.startsWith(item.href));
-                            return (
-                                <Link
-                                    key={ii}
-                                    href={item.href}
-                                    className={`nav-item ${isActive ? 'active' : ''}`}
-                                    title={collapsed ? item.label : undefined}
-                                >
-                                    <span className="nav-icon">{item.icon}</span>
-                                    <span className="nav-label">{item.label}</span>
-                                    {item.badge && <span className="nav-badge">{item.badge}</span>}
-                                </Link>
-                            );
-                        })}
+            <nav className="hs-sidebar-nav">
+                {navSections.map((section) => (
+                    <div key={section.title} className="hs-sidebar-section">
+                        <div className="hs-sidebar-section-title">{section.title}</div>
+                        {section.items.map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`hs-nav-item ${pathname === item.href ? 'active' : ''}`}
+                            >
+                                <span className="nav-icon">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </Link>
+                        ))}
                     </div>
                 ))}
             </nav>
 
-            <div className="sidebar-footer">
-                <button className="sidebar-collapse-btn" onClick={onToggle}>
-                    {collapsed ? '▶' : '◀'}
-                </button>
+            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--hs-border)', fontSize: '12px', color: 'var(--hs-text-muted)' }}>
+                HostingSignal v1.0.0
             </div>
         </aside>
     );

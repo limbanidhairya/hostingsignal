@@ -1,94 +1,53 @@
 'use client';
-import { useState, useEffect } from 'react';
-import api from '@/lib/api';
-import { useToast } from '@/components/ui/Toast';
+import { useState } from 'react';
 
 export default function DatabasesPage() {
-    const { showToast, ToastContainer } = useToast();
-    const [dbs, setDbs] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [showCreate, setShowCreate] = useState(false);
-    const [newName, setNewName] = useState('');
-    const [newUser, setNewUser] = useState('');
-    const [newPass, setNewPass] = useState('');
-    const [creating, setCreating] = useState(false);
-
-    useEffect(() => { loadDbs(); }, []);
-
-    async function loadDbs() {
-        try { const data = await api.getDatabases(); setDbs(Array.isArray(data) ? data : []); }
-        catch { showToast('Failed to load databases', 'error'); }
-        finally { setLoading(false); }
-    }
-
-    async function handleCreate() {
-        if (!newName) { showToast('Enter a database name', 'error'); return; }
-        setCreating(true);
-        try {
-            const result = await api.createDatabase(newName, newUser || undefined, newPass || undefined);
-            showToast(`Database ${newName} created! User: ${result.user}, Pass: ${result.password}`, 'success');
-            setShowCreate(false); setNewName(''); setNewUser(''); setNewPass('');
-            loadDbs();
-        } catch (e) { showToast('Failed: ' + e.message, 'error'); }
-        finally { setCreating(false); }
-    }
-
-    async function handleDelete(name, user) {
-        if (!confirm(`Delete database ${name}?`)) return;
-        try { await api.deleteDatabase(name, user); showToast(`${name} deleted`, 'success'); loadDbs(); }
-        catch (e) { showToast('Failed: ' + e.message, 'error'); }
-    }
-
-    if (loading) return <div className="animate-fade" style={{ padding: 60, textAlign: 'center' }}><div className="stat-value">⏳</div><p>Loading databases...</p></div>;
+    const [databases, setDatabases] = useState([
+        { name: 'wordpress_db', user: 'wp_user', size: '142 MB', engine: 'MariaDB', created: '2024-12-01' },
+        { name: 'nextcloud_db', user: 'nc_user', size: '328 MB', engine: 'MariaDB', created: '2025-01-10' },
+    ]);
+    const [showModal, setShowModal] = useState(false);
+    const [newDb, setNewDb] = useState({ name: '', username: '', password: '' });
 
     return (
-        <div className="animate-fade">
-            <ToastContainer />
-            <div className="page-header">
-                <div><h1 className="glow-text">Databases</h1><p>Manage MariaDB databases and users</p></div>
-                <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-                    <button className="btn skeuo-btn">🔧 phpMyAdmin</button>
-                    <button className="btn skeuo-btn-primary" onClick={() => setShowCreate(true)}>+ Create Database</button>
+        <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                <div><h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Databases</h2><p style={{ fontSize: 14, color: 'var(--hs-text-muted)', marginTop: 4 }}>{databases.length} databases</p></div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="hs-btn hs-btn-secondary hs-btn-sm">phpMyAdmin</button>
+                    <button className="hs-btn hs-btn-primary" onClick={() => setShowModal(true)}>+ Create Database</button>
                 </div>
             </div>
-
-            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                <div className="stat-card blue clay-card" style={{ background: 'transparent' }}><div className="stat-icon blue">🗄️</div><div className="stat-content"><div className="stat-value glow-text">{dbs.length}</div><div className="stat-label">Databases</div></div></div>
-                <div className="stat-card purple clay-card" style={{ background: 'transparent' }}><div className="stat-icon purple">👤</div><div className="stat-content"><div className="stat-value glow-text">{dbs.length}</div><div className="stat-label">Database Users</div></div></div>
-                <div className="stat-card orange clay-card" style={{ background: 'transparent' }}><div className="stat-icon orange">💾</div><div className="stat-content"><div className="stat-value glow-text">{dbs.reduce((a, d) => a + parseFloat(d.size || '0'), 0).toFixed(1)} MB</div><div className="stat-label">Total Size</div></div></div>
+            <div className="hs-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table className="hs-table">
+                    <thead><tr><th>Database</th><th>User</th><th>Size</th><th>Engine</th><th>Created</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {databases.map(db => (
+                            <tr key={db.name}>
+                                <td style={{ fontWeight: 550 }}>🗄️ {db.name}</td>
+                                <td style={{ fontFamily: 'monospace', color: 'var(--hs-text-secondary)' }}>{db.user}</td>
+                                <td style={{ color: 'var(--hs-text-muted)' }}>{db.size}</td>
+                                <td><span className="hs-badge info">{db.engine}</span></td>
+                                <td style={{ color: 'var(--hs-text-muted)' }}>{db.created}</td>
+                                <td><div style={{ display: 'flex', gap: 6 }}><button className="hs-btn hs-btn-secondary hs-btn-sm">Manage</button><button className="hs-btn hs-btn-danger hs-btn-sm">Drop</button></div></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
-
-            <div className="table-container liquid-glass">
-                <table><thead><tr><th>Database</th><th>Size</th><th>Tables</th><th>User</th><th>Actions</th></tr></thead>
-                    <tbody>{dbs.map((db, i) => (
-                        <tr key={i}>
-                            <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: 'var(--radius-md)', background: 'var(--accent-blue-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🗄️</div>
-                                <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{db.name}</div>
-                            </div></td>
-                            <td style={{ fontWeight: 600 }}>{db.size}</td>
-                            <td>{db.tables}</td>
-                            <td style={{ fontFamily: 'monospace', fontSize: 12 }}>{db.user || '-'}</td>
-                            <td><div style={{ display: 'flex', gap: 6 }}>
-                                <button className="btn btn-sm btn-secondary">phpMyAdmin</button>
-                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(db.name, db.user)}>Delete</button>
-                            </div></td>
-                        </tr>
-                    ))}</tbody></table>
-            </div>
-
-            {showCreate && (
-                <div className="modal-overlay" onClick={() => setShowCreate(false)}><div className="modal liquid-glass" onClick={e => e.stopPropagation()}>
-                    <div className="modal-header"><h2 className="modal-title glow-text">Create Database</h2><button className="modal-close" onClick={() => setShowCreate(false)}>✕</button></div>
-                    <div className="modal-body">
-                        <div className="form-group"><label className="form-label">Database Name</label><input className="form-input" style={{ background: 'rgba(0,0,0,0.2)' }} placeholder="my_database" value={newName} onChange={e => setNewName(e.target.value)} /></div>
-                        <div className="alert alert-info">ℹ️ A database user will be auto-created. Password will be shown after creation.</div>
-                        <div className="form-group"><label className="form-label">Username (optional)</label><input className="form-input" style={{ background: 'rgba(0,0,0,0.2)' }} placeholder="Auto-generated if empty" value={newUser} onChange={e => setNewUser(e.target.value)} /></div>
-                        <div className="form-group"><label className="form-label">Password (optional)</label><input className="form-input" style={{ background: 'rgba(0,0,0,0.2)' }} type="password" placeholder="Auto-generated if empty" value={newPass} onChange={e => setNewPass(e.target.value)} /></div>
+            {showModal && (
+                <div className="hs-modal-overlay" onClick={() => setShowModal(false)}>
+                    <div className="hs-modal" onClick={e => e.stopPropagation()}>
+                        <h3 className="hs-modal-title">Create Database</h3>
+                        <div className="hs-input-group"><label>Database Name</label><input className="hs-input" placeholder="my_database" value={newDb.name} onChange={e => setNewDb({ ...newDb, name: e.target.value })} /></div>
+                        <div className="hs-input-group"><label>Username</label><input className="hs-input" placeholder="db_user" value={newDb.username} onChange={e => setNewDb({ ...newDb, username: e.target.value })} /></div>
+                        <div className="hs-input-group"><label>Password</label><input className="hs-input" type="password" placeholder="Strong password" value={newDb.password} onChange={e => setNewDb({ ...newDb, password: e.target.value })} /></div>
+                        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+                            <button className="hs-btn hs-btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                            <button className="hs-btn hs-btn-primary" onClick={() => { setDatabases(prev => [...prev, { name: newDb.name, user: newDb.username, size: '0 MB', engine: 'MariaDB', created: new Date().toISOString().split('T')[0] }]); setShowModal(false); }}>Create</button>
+                        </div>
                     </div>
-                    <div className="modal-footer"><button className="btn skeuo-btn" onClick={() => setShowCreate(false)}>Cancel</button>
-                        <button className="btn skeuo-btn-primary" onClick={handleCreate} disabled={creating}>{creating ? '⏳ Creating...' : 'Create Database'}</button></div>
-                </div></div>
+                </div>
             )}
         </div>
     );

@@ -1,30 +1,39 @@
 'use client';
-import { useRequireAuth } from '@/context/AuthContext';
-import AppShell from '@/components/layout/AppShell';
+import Sidebar from '@/components/layout/Sidebar';
+import Header from '@/components/layout/Header';
+import { usePathname } from 'next/navigation';
+
+const pageTitles = {
+    '/dashboard': 'Dashboard',
+    '/websites': 'Websites',
+    '/domains': 'Domains',
+    '/dns': 'DNS Management',
+    '/databases': 'Databases',
+    '/email': 'Email',
+    '/docker': 'Docker',
+    '/files': 'File Manager',
+    '/monitoring': 'Monitoring',
+    '/backups': 'Backups',
+    '/security': 'Security',
+    '/settings': 'Settings',
+    '/license': 'License',
+    '/admin': 'Admin',
+    '/plugins': 'Plugins',
+};
 
 export default function PanelLayout({ children }) {
-    const { user, loading } = useRequireAuth();
+    const pathname = usePathname();
+    const title = pageTitles[pathname] || 'HostingSignal';
 
-    if (loading) {
-        return (
-            <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                height: '100vh', background: 'var(--bg-primary)'
-            }}>
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                        width: '48px', height: '48px', borderRadius: 'var(--radius-md)',
-                        background: 'linear-gradient(135deg, var(--primary), var(--accent-cyan))',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontWeight: 800, color: 'white', fontSize: '18px', margin: '0 auto 16px'
-                    }}>HS</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Loading HostingSignal...</div>
+    return (
+        <div className="hs-layout">
+            <Sidebar />
+            <main className="hs-main">
+                <Header title={title} />
+                <div className="hs-content hs-animate-in">
+                    {children}
                 </div>
-            </div>
-        );
-    }
-
-    if (!user) return null;
-
-    return <AppShell>{children}</AppShell>;
+            </main>
+        </div>
+    );
 }

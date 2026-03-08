@@ -1,0 +1,51 @@
+{
+    "name": "security_scanner",
+    "version": "1.0.0",
+    "description": "ClamAV-powered security scanner that automatically scans uploaded files and website directories for malware",
+    "author": "HostingSignal",
+    "category": "security",
+    "min_panel_version": "1.0.0",
+    "entry_point": "main.py",
+    "hooks": [
+        "website.created",
+        "cron.daily",
+        "panel.startup"
+    ],
+    "ui_extensions": [
+        {
+            "type": "sidebar_item",
+            "label": "Security Scanner",
+            "icon": "🛡️",
+            "route": "/plugins/security-scanner"
+        },
+        {
+            "type": "dashboard_widget",
+            "label": "Threat Summary",
+            "component": "ThreatWidget"
+        }
+    ],
+    "api_routes": [
+        {
+            "method": "POST",
+            "path": "/api/plugins/security-scanner/scan",
+            "handler": "start_scan"
+        },
+        {
+            "method": "GET",
+            "path": "/api/plugins/security-scanner/results",
+            "handler": "get_results"
+        },
+        {
+            "method": "GET",
+            "path": "/api/plugins/security-scanner/status",
+            "handler": "get_status"
+        }
+    ],
+    "permissions": [
+        "file_read",
+        "process_exec"
+    ],
+    "dependencies": [
+        "clamav"
+    ]
+}
