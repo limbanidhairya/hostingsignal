@@ -1,0 +1,104 @@
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Databases</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Manage MariaDB/MySQL databases and users</p>
+    </div>
+    <a href="/phpmyadmin" target="_blank" class="px-4 py-2 bg-slate-800 text-white text-sm font-bold rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors flex items-center gap-2">
+        <span class="material-symbols-outlined">database</span> phpMyAdmin
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Databases Panel -->
+    <div class="glass rounded-xl overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-border-dark flex justify-between items-center">
+            <h3 class="font-bold text-slate-100 flex items-center gap-2"><span class="material-symbols-outlined text-primary">data_usage</span> Databases</h3>
+            <button class="text-xs bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded-lg font-bold hover:bg-primary hover:text-white transition-colors" onclick="document.getElementById('dbForm').classList.toggle('hidden')">+ Create DB</button>
+        </div>
+        
+        <div id="dbForm" class="hidden p-6 border-b border-border-dark bg-slate-800/20">
+            <form method="POST" action="/api/database/create">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Database Name</label>
+                <div class="flex items-center mb-4">
+                    <span class="bg-slate-800/80 border border-slate-700 border-r-0 rounded-l-lg px-4 py-2.5 text-sm text-slate-400 font-mono"><TMPL_VAR NAME=prefix>_</span>
+                    <input type="text" name="name" class="w-full bg-slate-800/50 border border-slate-700 rounded-r-lg px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" placeholder="db1" required>
+                </div>
+                <button type="submit" class="w-full py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">Create Database</button>
+            </form>
+        </div>
+
+        <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-800/30 border-b border-border-dark">
+                    <tr>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Name</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Size</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-dark/50 text-sm">
+                    <TMPL_LOOP NAME=databases>
+                    <tr class="hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-3 font-mono font-bold text-slate-200"><TMPL_VAR NAME=name></td>
+                        <td class="px-6 py-3"><span class="px-2 py-1 rounded bg-slate-700/50 border border-slate-600 font-mono text-xs"><TMPL_VAR NAME=size_mb> MB</span></td>
+                        <td class="px-6 py-3 text-right">
+                            <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                    </TMPL_LOOP>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Users Panel -->
+    <div class="glass rounded-xl overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-border-dark flex justify-between items-center">
+            <h3 class="font-bold text-slate-100 flex items-center gap-2"><span class="material-symbols-outlined text-accent">group</span> DB Users</h3>
+            <button class="text-xs bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded-lg font-bold hover:bg-primary hover:text-white transition-colors" onclick="document.getElementById('userForm').classList.toggle('hidden')">+ Add User</button>
+        </div>
+        
+        <div id="userForm" class="hidden p-6 border-b border-border-dark bg-slate-800/20">
+            <form method="POST" action="/api/database/create_user">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Username</label>
+                <div class="flex items-center mb-4">
+                    <span class="bg-slate-800/80 border border-slate-700 border-r-0 rounded-l-lg px-4 py-2.5 text-sm text-slate-400 font-mono"><TMPL_VAR NAME=prefix>_</span>
+                    <input type="text" name="username" class="w-full bg-slate-800/50 border border-slate-700 rounded-r-lg px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" placeholder="user1" required>
+                </div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+                <input type="password" name="password" class="w-full mb-4 bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" required>
+                <button type="submit" class="w-full py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">Create User</button>
+            </form>
+        </div>
+
+        <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-800/30 border-b border-border-dark">
+                    <tr>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Username</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Privileges on</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-dark/50 text-sm">
+                    <TMPL_LOOP NAME=users>
+                    <tr class="hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-3 font-mono font-bold text-slate-200"><TMPL_VAR NAME=username></td>
+                        <td class="px-6 py-3"><span class="px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono text-[11px]"><TMPL_VAR NAME=databases></span></td>
+                        <td class="px-6 py-3 text-right space-x-2">
+                            <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Change Password">
+                                <span class="material-symbols-outlined text-[18px]">key</span>
+                            </button>
+                            <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                    </TMPL_LOOP>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

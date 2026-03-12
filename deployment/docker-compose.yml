@@ -12,6 +12,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
     volumes:
       - pg_data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     ports:
       - "5432:5432"
     healthcheck:
@@ -52,7 +53,7 @@ services:
   # ── License Server ─────────────────────────────────────
   license-server:
     build:
-      context: ./license-server
+      context: ../license-server
       dockerfile: Dockerfile
     container_name: hs-license-server
     restart: unless-stopped
@@ -72,7 +73,7 @@ services:
   # ── Panel Backend API ──────────────────────────────────
   backend:
     build:
-      context: ./backend
+      context: ../usr/local/hspanel/backend
       dockerfile: Dockerfile
     container_name: hs-backend
     restart: unless-stopped
@@ -84,24 +85,24 @@ services:
     environment:
       DATABASE_URL: sqlite+aiosqlite:///./hostingsignal.db
       REDIS_URL: redis://redis:6379/1
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      HS_PANEL_API_TOKEN: ${HS_PANEL_API_TOKEN:-change-me}
     ports:
-      - "8000:8000"
+      - "2083:2083"
     volumes:
-      - backend_data:/usr/local/hostingsignal/backend/data
+      - backend_data:/app/data
       - /home:/home
 
   # ── Panel Frontend ─────────────────────────────────────
   frontend:
     build:
-      context: ./frontend
+      context: ../developer-panel/web
       dockerfile: Dockerfile
     container_name: hs-frontend
     restart: unless-stopped
     depends_on:
       - backend
     environment:
-      NEXT_PUBLIC_API_URL: http://backend:8000
+      NEXT_PUBLIC_API_URL: http://backend:2083
     ports:
       - "3000:3000"
 

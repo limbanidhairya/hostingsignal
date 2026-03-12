@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>[% title %] - HostingSignal WebHost Manager</title>
+    <!-- Basic cPanel-like styling injected directly to avoid static file dependencies early on -->
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; }
+        .header { background-color: #f15a24; color: white; padding: 10px 20px; display: flex; justify-content: space-between; }
+        .header a { color: white; text-decoration: none; font-weight: bold; }
+        .sidebar { width: 250px; background-color: #2c3e50; color: white; position: fixed; height: 100%; top: 40px; left: 0; padding-top: 20px; overflow-y: auto; }
+        .sidebar ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar li a { display: block; padding: 10px 20px; color: #bdc3c7; text-decoration: none; border-bottom: 1px solid #34495e; }
+        .sidebar li a:hover { background-color: #34495e; color: white; }
+        .main-content { margin-left: 250px; padding: 20px; margin-top: 40px; }
+        .card { background: white; border: 1px solid #ddd; border-radius: 4px; padding: 20px; margin-bottom: 20px; }
+        h1, h2, h3 { color: #333; margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div><strong>HostingSignal</strong> WHM</div>
+        <div>
+            User: [% user %] | <a href="/logout">Logout</a>
+        </div>
+    </div>
+    
+    <div class="sidebar">
+        <ul>
+            <li><a href="/cpsess[% session_id %]/scripts/command?action=list_accounts">List Accounts</a></li>
+            <li><a href="/cpsess[% session_id %]/scripts/command?action=create_account">Create a New Account</a></li>
+            <li><a href="/cpsess[% session_id %]/scripts/command?action=dns_zones">DNS Zone Manager</a></li>
+            <li><a href="/cpsess[% session_id %]/scripts/command?action=apache_config">Apache Configuration</a></li>
+            <li><a href="/cpsess[% session_id %]/scripts/command?action=server_status">Server Status</a></li>
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <!-- Template Toolkit injection block -->
+        [% content %]
+    </div>
+</body>
+</html>

@@ -1,17 +1,16 @@
 [Unit]
 Description=HostingSignal Background Daemon (Task Queue Consumer)
 Documentation=https://docs.hostingsignal.com
-After=network.target postgresql.service redis.service rabbitmq-server.service
-Wants=redis.service
+After=network.target hostingsignal-api.service
+Wants=hostingsignal-api.service
 
 [Service]
 Type=exec
 User=root
 Group=root
-WorkingDirectory=/usr/local/hostingsignal/backend
-Environment="PATH=/usr/local/hostingsignal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="PYTHONPATH=/usr/local/hostingsignal/backend"
-ExecStart=/usr/local/hostingsignal/backend/venv/bin/python -m app.daemon.scheduler
+WorkingDirectory=/usr/local/hspanel
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/perl /usr/local/hspanel/daemon/hs-srvd.pl
 Restart=always
 RestartSec=10
 StandardOutput=journal

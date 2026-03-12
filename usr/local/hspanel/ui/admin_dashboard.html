@@ -1,0 +1,359 @@
+<html class="dark"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#3c83f6",
+            "accent": "#00d4ff",
+            "background-light": "#f5f7f8",
+            "background-dark": "#0a1628",
+            "card-dark": "#112240",
+            "border-dark": "#1d2d50",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+<style>
+    .glass {
+      background: rgba(17, 34, 64, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(29, 45, 80, 0.5);
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-64 flex-shrink-0 bg-card-dark/50 border-r border-border-dark hidden lg:flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl">rocket_launch</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-slate-100 uppercase">HS-Panel</h1>
+</div>
+<nav class="flex-1 px-4 space-y-1 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-medium border border-primary/20" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+          Dashboard
+        </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+          Server Monitoring
+        </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+          User Management
+        </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined">terminal</span>
+          Service Control
+        </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined">extension</span>
+          Plugin Manager
+        </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+          System Logs
+        </a>
+<div class="pt-8 pb-4 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">System</div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+          Settings
+        </a>
+</nav>
+<div class="p-4 border-t border-border-dark">
+<div class="flex items-center gap-3 px-2">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-slate-700" data-alt="Administrator user profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBZFfZXNGBBeJOWHwMYUXG-U74PqiBYF59CfbbhsfuhaLBOu2FV7ICv9qkkOv730FA2pGiKZhhOmgMSDA1_F26fwp7lkvMY-Fff7KIBTzKrzP04KQQgXXiCUUtMLJQaJ9sP9HatURKI_qDJcW4bvZIrVFkefDScv6DS5nlaksSyxkOsWyR7SPgyiRBn8h4KbTMHCWcGx13Ow85aaX7hB56tdaYX7rczEflbGm7srWiC9eRdb2jN7mEGAr1vuUPBi_BjC_3A5dzHGLo')"></div>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background-dark"></div>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-100">Super Admin</p>
+<p class="text-xs text-slate-500">Enterprise Edition</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<header class="h-16 flex items-center justify-between px-8 bg-background-dark/80 backdrop-blur-md border-b border-border-dark sticky top-0 z-10">
+<div class="flex items-center flex-1">
+<div class="relative w-96 max-w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="w-full bg-slate-800/50 border-none rounded-lg pl-10 pr-4 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:ring-1 focus:ring-primary" placeholder="Search resources, domains or logs..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-800 transition-colors relative text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2.5 w-2 h-2 bg-accent rounded-full border border-background-dark"></span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-800 transition-colors text-slate-400">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-px bg-border-dark mx-2"></div>
+<button class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">add</span>
+            Create Domain
+          </button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8 space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="glass p-6 rounded-xl flex flex-col gap-1">
+<div class="flex items-center justify-between mb-2">
+<span class="text-slate-400 text-sm font-medium">Uptime</span>
+<span class="material-symbols-outlined text-green-500">timer</span>
+</div>
+<div class="text-2xl font-bold text-slate-100">99.97%</div>
+<div class="text-xs text-green-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+              +0.01% since yesterday
+            </div>
+</div>
+<div class="glass p-6 rounded-xl flex flex-col gap-1">
+<div class="flex items-center justify-between mb-2">
+<span class="text-slate-400 text-sm font-medium">Active Accounts</span>
+<span class="material-symbols-outlined text-primary">person_check</span>
+</div>
+<div class="text-2xl font-bold text-slate-100">247</div>
+<div class="text-xs text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+              +12 new this month
+            </div>
+</div>
+<div class="glass p-6 rounded-xl flex flex-col gap-1">
+<div class="flex items-center justify-between mb-2">
+<span class="text-slate-400 text-sm font-medium">Total Domains</span>
+<span class="material-symbols-outlined text-accent">language</span>
+</div>
+<div class="text-2xl font-bold text-slate-100">892</div>
+<div class="text-xs text-accent flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+              +45 domains added
+            </div>
+</div>
+<div class="glass p-6 rounded-xl flex flex-col gap-1">
+<div class="flex items-center justify-between mb-2">
+<span class="text-slate-400 text-sm font-medium">Server Status</span>
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+<div class="text-2xl font-bold text-slate-100 uppercase tracking-wider">Online</div>
+<div class="text-xs text-slate-500">Operational across all zones</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="lg:col-span-2 glass rounded-xl p-8 flex flex-col gap-8">
+<h3 class="text-lg font-semibold text-slate-100 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">bar_chart</span>
+              Resource Performance
+            </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+<div class="flex flex-col items-center">
+<div class="relative w-48 h-48 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-slate-800" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-width="12"></circle>
+<circle cx="96" cy="96" fill="transparent" r="80" stroke="url(#cpuGradient)" stroke-dasharray="502.6" stroke-dashoffset="331.7" stroke-linecap="round" stroke-width="12"></circle>
+<defs>
+<lineargradient id="cpuGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#3c83f6"></stop>
+<stop offset="100%" stop-color="#00d4ff"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-4xl font-bold text-slate-100">34%</span>
+<span class="text-xs text-slate-400 font-medium uppercase tracking-widest">CPU Usage</span>
+</div>
+</div>
+<div class="mt-4 flex gap-4 text-xs">
+<span class="flex items-center gap-1 text-slate-400"><span class="w-2 h-2 rounded-full bg-primary"></span> System</span>
+<span class="flex items-center gap-1 text-slate-400"><span class="w-2 h-2 rounded-full bg-accent"></span> User</span>
+</div>
+</div>
+<div class="flex flex-col items-center">
+<div class="relative w-48 h-48 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-slate-800" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-width="12"></circle>
+<circle cx="96" cy="96" fill="transparent" r="80" stroke="#3c83f6" stroke-dasharray="502.6" stroke-dashoffset="191.0" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-4xl font-bold text-slate-100">62%</span>
+<span class="text-xs text-slate-400 font-medium uppercase tracking-widest">RAM Usage</span>
+</div>
+</div>
+<div class="mt-4 flex gap-4 text-xs">
+<span class="flex items-center gap-1 text-slate-400">9.92 GB / 16.0 GB Used</span>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-6 border-t border-border-dark flex flex-col gap-4">
+<div class="flex justify-between text-sm">
+<span class="text-slate-400 font-medium">Disk Usage (1.2TB / 1.6TB)</span>
+<span class="text-slate-100 font-bold">75%</span>
+</div>
+<div class="w-full bg-slate-800 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-700/50">
+<div class="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500 shadow-inner" style="width: 75%"></div>
+</div>
+</div>
+</div>
+<div class="glass rounded-xl p-6 flex flex-col gap-6">
+<h3 class="text-lg font-semibold text-slate-100 flex items-center justify-between">
+              Service Status
+              <span class="text-xs font-normal text-slate-500 uppercase tracking-widest">5 Running</span>
+</h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-border-dark">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">public</span>
+<span class="text-sm font-medium">Apache Web Server</span>
+</div>
+<span class="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                  RUNNING
+                </span>
+</div>
+<div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-border-dark">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">database</span>
+<span class="text-sm font-medium">MySQL Database</span>
+</div>
+<span class="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                  RUNNING
+                </span>
+</div>
+<div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-border-dark">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">mail</span>
+<span class="text-sm font-medium">Postfix Mail</span>
+</div>
+<span class="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                  RUNNING
+                </span>
+</div>
+<div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-border-dark">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">move_to_inbox</span>
+<span class="text-sm font-medium">Dovecot IMAP</span>
+</div>
+<span class="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                  RUNNING
+                </span>
+</div>
+<div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-border-dark">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">dns</span>
+<span class="text-sm font-medium">Named DNS</span>
+</div>
+<span class="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+<span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                  RUNNING
+                </span>
+</div>
+</div>
+<button class="w-full mt-2 py-2.5 border border-slate-700 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all">
+              Manage Services
+            </button>
+</div>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+<div class="xl:col-span-3 glass rounded-xl overflow-hidden">
+<div class="px-8 py-6 border-b border-border-dark flex items-center justify-between">
+<h3 class="text-lg font-semibold text-slate-100">Recent Activity Log</h3>
+<button class="text-primary text-sm font-medium hover:underline">View All Logs</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-800/30 text-xs font-bold text-slate-500 uppercase tracking-widest">
+<tr>
+<th class="px-8 py-4">Event</th>
+<th class="px-8 py-4">IP Address</th>
+<th class="px-8 py-4">Timestamp</th>
+<th class="px-8 py-4">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-dark/50 text-sm">
+<tr class="hover:bg-slate-800/20 transition-colors">
+<td class="px-8 py-4 font-medium text-slate-200">Admin Login Success</td>
+<td class="px-8 py-4 text-slate-400">192.168.1.105</td>
+<td class="px-8 py-4 text-slate-400">2023-11-24 14:22:10</td>
+<td class="px-8 py-4"><span class="px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20 uppercase">Audit</span></td>
+</tr>
+<tr class="hover:bg-slate-800/20 transition-colors">
+<td class="px-8 py-4 font-medium text-slate-200">Domain 'example.com' Created</td>
+<td class="px-8 py-4 text-slate-400">10.0.42.11</td>
+<td class="px-8 py-4 text-slate-400">2023-11-24 13:05:45</td>
+<td class="px-8 py-4"><span class="px-2 py-1 rounded bg-primary/10 text-primary text-xs font-bold border border-primary/20 uppercase">System</span></td>
+</tr>
+<tr class="hover:bg-slate-800/20 transition-colors">
+<td class="px-8 py-4 font-medium text-slate-200">MySQL Backup Completed</td>
+<td class="px-8 py-4 text-slate-400">127.0.0.1</td>
+<td class="px-8 py-4 text-slate-400">2023-11-24 12:00:01</td>
+<td class="px-8 py-4"><span class="px-2 py-1 rounded bg-accent/10 text-accent text-xs font-bold border border-accent/20 uppercase">Tasks</span></td>
+</tr>
+<tr class="hover:bg-slate-800/20 transition-colors">
+<td class="px-8 py-4 font-medium text-slate-200">Apache Configuration Reload</td>
+<td class="px-8 py-4 text-slate-400">10.0.42.11</td>
+<td class="px-8 py-4 text-slate-400">2023-11-24 11:45:22</td>
+<td class="px-8 py-4"><span class="px-2 py-1 rounded bg-primary/10 text-primary text-xs font-bold border border-primary/20 uppercase">System</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="glass rounded-xl p-6">
+<h3 class="text-lg font-semibold text-slate-100 mb-6">Quick Actions</h3>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-border-dark transition-all group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary">refresh</span>
+<span class="text-xs font-medium text-slate-300">Reboot</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-border-dark transition-all group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-accent">backup</span>
+<span class="text-xs font-medium text-slate-300">Backup</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-border-dark transition-all group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-amber-500">cleaning_services</span>
+<span class="text-xs font-medium text-slate-300">Purge Cache</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-border-dark transition-all group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-rose-500">emergency</span>
+<span class="text-xs font-medium text-slate-300">Hard Stop</span>
+</button>
+<button class="col-span-2 flex items-center justify-center gap-3 p-4 rounded-xl bg-primary hover:bg-primary/90 text-white transition-all">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="text-sm font-bold uppercase tracking-widest">Update HS-Panel</span>
+</button>
+</div>
+<div class="mt-8 p-4 rounded-lg bg-accent/10 border border-accent/20">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-accent">info</span>
+<span class="text-sm font-bold text-accent">Optimization Tip</span>
+</div>
+<p class="text-xs text-slate-400 leading-relaxed">
+                Your current RAM usage is slightly high. Consider upgrading to Enterprise Pro to leverage advanced caching mechanisms.
+              </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

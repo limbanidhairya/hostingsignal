@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Webmail - HostingSignal</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 0; display: flex; height: 100vh; align-items: center; justify-content: center; }
+        .card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; margin-bottom: 20px; color: #2c3e50; }
+        .apps { display: flex; gap: 20px; justify-content: center; margin-top: 30px; }
+        .app-btn { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: #333; padding: 20px; border: 1px solid #ddd; border-radius: 8px; transition: background 0.2s; width: 120px; }
+        .app-btn:hover { background: #f0f4f8; border-color: #bcd; }
+        .icon { font-size: 40px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="logo">HostingSignal Webmail</div>
+        <p>Choose a webmail application to open your inbox:</p>
+        
+        <div class="apps">
+            <a href="/cpsess[% session_id %]/3rdparty/roundcube/index.php" class="app-btn">
+                <div class="icon">✉️</div>
+                <strong>Roundcube</strong>
+            </a>
+            
+            <a href="/cpsess[% session_id %]/3rdparty/horde/index.php" class="app-btn">
+                <div class="icon">📬</div>
+                <strong>Horde</strong>
+            </a>
+        </div>
+        
+        <div style="margin-top: 40px; font-size: 0.85rem; color: #888;">
+            <a href="#" style="color: #666; text-decoration: none;">Configure Mail Client</a> | 
+            <a href="#" style="color: #666; text-decoration: none;">Manage Forwarders</a> | 
+            <a href="/logout" style="color: #c00; text-decoration: none;">Logout</a>
+        </div>
+    </div>
+</body>
+</html>

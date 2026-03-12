@@ -1,0 +1,191 @@
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">File Manager</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Manage your website files and directories</p>
+    </div>
+    <div class="flex gap-3">
+        <button onclick="promptCreateFolder()" class="px-4 py-2 bg-slate-800/50 text-slate-200 text-sm font-bold rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px]">create_new_folder</span> New Folder
+        </button>
+        <button onclick="promptCreateFile()" class="px-4 py-2 bg-slate-800/50 text-slate-200 text-sm font-bold rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px]">note_add</span> New File
+        </button>
+    </div>
+</div>
+
+<div class="glass rounded-xl overflow-hidden flex flex-col min-h-[600px]">
+    <div class="px-6 py-4 border-b border-slate-700/50 flex flex-wrap gap-4 items-center justify-between bg-slate-800/30">
+        <div class="flex flex-1 items-center gap-4 min-w-[300px]">
+            <button onclick="navigateUp()" class="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors" title="Up one level">
+                <span class="material-symbols-outlined">turn_left</span>
+            </button>
+            <button onclick="loadFiles('/')" class="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-300 hover:bg-slate-700 transition-colors" title="Home Directory">
+                <span class="material-symbols-outlined">home</span>
+            </button>
+            <div class="flex-1 flex items-center bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2">
+                <span class="material-symbols-outlined text-slate-500 mr-3">folder_open</span>
+                <input type="text" id="current_path" readonly class="w-full bg-transparent border-none text-sm text-slate-300 font-mono focus:outline-none focus:ring-0">
+            </div>
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto flex-1">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-800/50 border-b border-slate-700/50">
+                <tr>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest w-12">Type</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Name</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Size</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Permissions</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="file_list" class="divide-y divide-slate-700/30 text-sm">
+                <tr><td colspan="5" class="text-center py-8 text-slate-500">Loading files...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Simple File Editor Modal (Hidden by default) -->
+<div id="editor_modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden">
+    <div class="glass w-full max-w-4xl max-h-[90vh] rounded-xl border border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-700/50 flex justify-between items-center bg-slate-800/50">
+            <h3 class="font-bold text-slate-100" id="editor_title">Editing File</h3>
+            <button onclick="closeEditor()" class="text-slate-400 hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="flex-1 p-0 overflow-hidden flex flex-col">
+            <textarea id="editor_textarea" class="flex-1 w-full p-4 bg-slate-950 text-slate-300 font-mono text-sm border-none focus:ring-0 resize-none" spellcheck="false"></textarea>
+        </div>
+        <div class="px-6 py-4 border-t border-slate-700/50 bg-slate-800/50 flex justify-end gap-3">
+            <button onclick="closeEditor()" class="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">Cancel</button>
+            <button id="save_btn" class="px-6 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg shadow-lg shadow-primary/20 transition-all">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPath = '/';
+
+    async function apiCall(functionName, payload) {
+        const res = await fetch(`/api/filemanager/${functionName}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        return await res.json();
+    }
+
+    async function loadFiles(path) {
+        currentPath = path;
+        document.getElementById('current_path').value = path;
+        const listEl = document.getElementById('file_list');
+        listEl.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">Loading...</td></tr>';
+        
+        try {
+            const data = await apiCall('list_files', { path: currentPath });
+            if (data.success) {
+                renderFiles(data.items);
+            } else {
+                listEl.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-400 font-medium">Error: ${data.error}</td></tr>`;
+            }
+        } catch (e) {
+            listEl.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-red-500">Network Error</td></tr>`;
+        }
+    }
+
+    function renderFiles(items) {
+        const listEl = document.getElementById('file_list');
+        if (items.length === 0) {
+            listEl.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500"><span class="material-symbols-outlined text-4xl mb-3 opacity-50 block">folder_open</span>This directory is empty.</td></tr>`;
+            return;
+        }
+        
+        listEl.innerHTML = items.map(item => {
+            const isDir = item.is_dir;
+            const icon = isDir ? '<span class="material-symbols-outlined text-primary text-2xl">folder</span>' : '<span class="material-symbols-outlined text-slate-400 text-2xl">description</span>';
+            const actionClick = isDir ? `loadFiles('${currentPath === '/' ? '' : currentPath}/${item.name}')` : `openFile('${item.name}')`;
+            
+            return `
+            <tr class="hover:bg-slate-800/30 transition-colors group">
+                <td class="px-6 py-4">${icon}</td>
+                <td class="px-6 py-4">
+                    <a href="javascript:void(0)" onclick="${actionClick}" class="font-medium ${isDir ? 'text-primary hover:text-primary/80' : 'text-slate-200 hover:text-white'} transition-colors">${item.name}</a>
+                </td>
+                <td class="px-6 py-4 text-slate-400 text-sm">${isDir ? '--' : Math.round(item.size/1024) + ' KB'}</td>
+                <td class="px-6 py-4 font-mono text-slate-500 text-xs">${item.perms}</td>
+                <td class="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                    ${!isDir ? `<button onclick="openFile('${item.name}')" class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition-colors mr-1" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>` : ''}
+                    <button onclick="deleteItem('${item.name}')" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    function navigateUp() {
+        if (currentPath === '/' || currentPath === '') return;
+        const parts = currentPath.split('/');
+        parts.pop();
+        loadFiles(parts.join('/') || '/');
+    }
+
+    async function promptCreateFolder() {
+        const name = prompt("Enter new folder name:");
+        if (!name) return;
+        const res = await apiCall('create_folder', { path: currentPath, name });
+        if(res.success) loadFiles(currentPath);
+        else alert(res.error);
+    }
+    
+    async function promptCreateFile() {
+        const name = prompt("Enter new file name (e.g. index.php):");
+        if (!name) return;
+        const res = await apiCall('create_file', { path: currentPath, name });
+        if(res.success) loadFiles(currentPath);
+        else alert(res.error);
+    }
+
+    async function deleteItem(name) {
+        if(!confirm(`Are you sure you want to delete ${name}?`)) return;
+        const itPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
+        const res = await apiCall('delete_item', { path: itPath });
+        if(res.success) loadFiles(currentPath);
+        else alert(res.error);
+    }
+
+    /* Editor Modal Logic */
+    let editingFileName = '';
+    async function openFile(name) {
+        editingFileName = name;
+        const itPath = currentPath === '/' ? `/${name}` : `${currentPath}/${name}`;
+        const res = await apiCall('read_file', { path: itPath });
+        if (res.success) {
+            document.getElementById('editor_title').innerText = `Editing: ${name}`;
+            document.getElementById('editor_textarea').value = res.content;
+            document.getElementById('editor_modal').classList.remove('hidden');
+            
+            document.getElementById('save_btn').onclick = async () => {
+                const newContent = document.getElementById('editor_textarea').value;
+                const saveRes = await apiCall('write_file', { path: itPath, content: newContent });
+                if(saveRes.success) {
+                    closeEditor();
+                    alert("File saved!");
+                } else {
+                    alert(saveRes.error);
+                }
+            };
+        } else {
+            alert("Cannot read file: " + res.error);
+        }
+    }
+
+    function closeEditor() {
+        document.getElementById('editor_modal').classList.add('hidden');
+        document.getElementById('editor_textarea').value = '';
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => loadFiles('/'));
+</script>

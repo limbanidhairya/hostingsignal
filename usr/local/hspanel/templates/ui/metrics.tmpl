@@ -1,0 +1,108 @@
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Server Metrics</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Live performance and usage analytics</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="glass p-6 rounded-xl flex flex-col gap-2 relative overflow-hidden">
+        <div class="flex justify-between items-center z-10">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest">CPU Load</h3>
+            <span class="material-symbols-outlined text-primary">memory</span>
+        </div>
+        <p class="text-3xl font-bold text-slate-100 z-10"><TMPL_VAR NAME=cpu_percent>%</p>
+        <p class="text-xs text-slate-500 z-10"><TMPL_VAR NAME=cpu_cores> Cores / Load: <TMPL_VAR NAME=cpu_load></p>
+        <div class="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-1000" style="width: <TMPL_VAR NAME=cpu_percent>%"></div>
+    </div>
+    
+    <div class="glass p-6 rounded-xl flex flex-col gap-2 relative overflow-hidden">
+        <div class="flex justify-between items-center z-10">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Memory</h3>
+            <span class="material-symbols-outlined text-accent">view_compact_alt</span>
+        </div>
+        <p class="text-3xl font-bold text-slate-100 z-10"><TMPL_VAR NAME=ram_percent>%</p>
+        <p class="text-xs text-slate-500 z-10"><TMPL_VAR NAME=ram_used> MB used of <TMPL_VAR NAME=ram_total> MB</p>
+        <div class="absolute bottom-0 left-0 h-1 bg-accent transition-all duration-1000" style="width: <TMPL_VAR NAME=ram_percent>%"></div>
+    </div>
+
+    <div class="glass p-6 rounded-xl flex flex-col gap-2 relative overflow-hidden">
+        <div class="flex justify-between items-center z-10">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Storage</h3>
+            <span class="material-symbols-outlined text-blue-500">hard_drive</span>
+        </div>
+        <p class="text-3xl font-bold text-slate-100 z-10"><TMPL_VAR NAME=disk_percent>%</p>
+        <p class="text-xs text-slate-500 z-10"><TMPL_VAR NAME=disk_used> GB used of <TMPL_VAR NAME=disk_total> GB</p>
+        <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all duration-1000" style="width: <TMPL_VAR NAME=disk_percent>%"></div>
+    </div>
+
+    <div class="glass p-6 rounded-xl flex flex-col gap-2 relative overflow-hidden">
+        <div class="flex justify-between items-center z-10">
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-widest">Network</h3>
+            <span class="material-symbols-outlined text-purple-500">router</span>
+        </div>
+        <p class="text-3xl font-bold text-slate-100 z-10"><TMPL_VAR NAME=tx_speed> <span class="text-lg">TX</span></p>
+        <p class="text-xs text-slate-500 z-10">RX <TMPL_VAR NAME=rx_speed> / Total: <TMPL_VAR NAME=total_bw></p>
+        <div class="absolute bottom-0 left-0 w-full h-1 bg-slate-800"></div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2 glass rounded-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-dark flex items-center justify-between">
+            <h3 class="font-bold text-slate-100"><span class="material-symbols-outlined text-primary align-middle mr-2">list_alt</span> Top Processes (Your User)</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-800/30 border-b border-border-dark">
+                    <tr>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">PID</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">CPU %</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">MEM %</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Command</th>
+                        <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-dark/50 text-sm">
+                    <TMPL_LOOP NAME=processes>
+                    <tr class="hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-3 font-mono text-slate-400"><TMPL_VAR NAME=pid></td>
+                        <td class="px-6 py-3 font-bold text-slate-200"><TMPL_VAR NAME=cpu></td>
+                        <td class="px-6 py-3 font-bold text-slate-200"><TMPL_VAR NAME=mem></td>
+                        <td class="px-6 py-3 font-mono text-slate-300 text-xs"><TMPL_VAR NAME=command></td>
+                        <td class="px-6 py-3 text-right">
+                            <button class="text-xs bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1 rounded hover:bg-red-500 hover:text-white transition-colors">Kill</button>
+                        </td>
+                    </tr>
+                    </TMPL_LOOP>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="glass rounded-xl overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-border-dark">
+            <h3 class="font-bold text-slate-100 flex items-center gap-2"><span class="material-symbols-outlined text-green-500">info</span> System Info</h3>
+        </div>
+        <div class="p-6 flex-1">
+            <div class="space-y-4">
+                <div>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Hostname</p>
+                    <p class="text-sm text-slate-200 font-mono mt-1"><TMPL_VAR NAME=hostname></p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">OS Details</p>
+                    <p class="text-sm text-slate-200 font-mono mt-1"><TMPL_VAR NAME=os_version></p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">IP Address</p>
+                    <p class="text-sm text-slate-200 font-mono mt-1"><TMPL_VAR NAME=ip_address></p>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Uptime</p>
+                    <p class="text-sm text-slate-200 font-mono mt-1"><TMPL_VAR NAME=uptime_full></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -19,7 +19,7 @@ from datetime import datetime
 INSTALL_DIR = "/usr/local/hostingsignal"
 CONFIG_DIR = "/etc/hostingsignal"
 LOG_DIR = "/var/log/hostingsignal"
-API_URL = "http://localhost:8000"
+API_URL = "http://localhost:8080"
 PLUGIN_DIR = f"{INSTALL_DIR}/plugins"
 PHP_MANAGER = f"{INSTALL_DIR}/backend/app/services/php_manager.sh"
 

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Manager - HostingSignal cPanel</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background-color: #f9f9fa; margin: 0; padding: 0; }
+        .toolbar { background-color: #f15a24; color: white; padding: 10px 20px; display: flex; gap: 15px; align-items: center; }
+        .toolbar button { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .toolbar button:hover { background: rgba(255,255,255,0.3); }
+        
+        .layout { display: flex; height: calc(100vh - 55px); }
+        .directory-tree { width: 250px; background: white; border-right: 1px solid #ddd; overflow-y: auto; padding: 15px; }
+        .file-list { flex: 1; padding: 20px; background: white; overflow-y:auto; }
+        
+        .path-bar { margin-bottom: 15px; padding: 10px; background: #f4f6f8; border: 1px solid #e0e0e0; border-radius: 4px; font-family: monospace; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+        th { font-weight: bold; color: #555; background: #fcfcfc; }
+        tr:hover { background: #f9f9fa; cursor: pointer; }
+        
+        .icon-file { padding-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div style="font-weight: bold; margin-right: 20px;">HostingSignal File Manager</div>
+        <button onclick="alert('Upload mocked')">⬆️ Upload</button>
+        <button onclick="alert('New File mocked')">📄 +File</button>
+        <button onclick="alert('New Folder mocked')">📁 +Folder</button>
+        <button onclick="alert('Delete mocked')">🗑️ Delete</button>
+        <button onclick="alert('Extract mocked')">📦 Extract</button>
+    </div>
+    
+    <div class="layout">
+        <!-- Tree View -->
+        <div class="directory-tree">
+            <div>
+                <strong>+ /home/[% user %]</strong>
+                <ul style="list-style: none; padding-left: 15px;">
+                    <li>+ public_html</li>
+                    <li>+ public_ftp</li>
+                    <li>+ mail</li>
+                    <li>+ etc</li>
+                    <li>+ tmp</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Files List -->
+        <div class="file-list">
+            <div class="path-bar">Current Path: <strong>[% current_path %]</strong></div>
+            
+            <table>
+                <tr>
+                    <th width="50%">Name</th>
+                    <th>Size</th>
+                    <th>Last Modified</th>
+                    <th>Permissions</th>
+                </tr>
+                
+                [% FOREACH item IN files %]
+                <tr>
+                    <td>[% IF item.is_dir %]📁[% ELSE %]📄[% END %] <span class="icon-file">[% item.name %]</span></td>
+                    <td>[% item.size %]</td>
+                    <td>[% item.mod_time %]</td>
+                    <td>[% item.perms %]</td>
+                </tr>
+                [% END %]
+                
+                [% IF files.size == 0 %]
+                <tr><td colspan="4" style="text-align:center; padding: 20px; color:#999;">This folder is empty.</td></tr>
+                [% END %]
+            </table>
+        </div>
+    </div>
+</body>
+</html>

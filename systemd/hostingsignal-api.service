@@ -1,17 +1,16 @@
 [Unit]
 Description=HostingSignal FastAPI Backend API
 Documentation=https://docs.hostingsignal.com
-After=network.target postgresql.service redis.service
-Wants=postgresql.service redis.service
+After=network.target
 
 [Service]
 Type=exec
 User=root
 Group=root
-WorkingDirectory=/usr/local/hostingsignal/backend
-Environment="PATH=/usr/local/hostingsignal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="PYTHONPATH=/usr/local/hostingsignal/backend"
-ExecStart=/usr/local/hostingsignal/backend/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --access-log --log-level info
+WorkingDirectory=/usr/local/hspanel
+Environment="PATH=/usr/local/hspanel/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONPATH=/usr/local/hspanel"
+ExecStart=/usr/local/hspanel/backend/venv/bin/uvicorn backend.api.main:app --host 0.0.0.0 --port 2083 --workers 2 --access-log --log-level info
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5
@@ -24,6 +23,7 @@ NoNewPrivileges=no
 ProtectSystem=false
 ProtectHome=false
 ReadWritePaths=/usr/local/hostingsignal /var/log/hostingsignal /etc/hostingsignal /home
+ReadWritePaths=/usr/local/hspanel /var/hspanel /home
 LimitNOFILE=65536
 LimitNPROC=4096
 

@@ -1,0 +1,63 @@
+version: 1
+approach: cyberpanel-aligned-service-first
+
+local_bundle:
+  default_root: ./local/services
+  required_subdirs:
+    - downloads
+    - source
+    - webapps
+    - manifests
+
+services:
+  web_server:
+    primary: openlitespeed
+    optional: litespeed-enterprise
+    install_mode: package
+  database:
+    options: [mariadb, mysql]
+    install_mode: package
+    manager: phpmyadmin
+  cache:
+    provider: lscache
+    install_mode: bundled-with-openlitespeed
+  email:
+    webmail: rainloop
+    mta: postfix
+    imap_pop: dovecot
+    install_mode:
+      rainloop: artifact-download
+      postfix: package
+      dovecot: package
+  dns:
+    provider: powerdns
+    install_mode: package
+  security:
+    csf:
+      source: https://download.configserver.com/csf.tgz
+      install_mode: artifact-download
+    modsecurity:
+      install_mode: package
+      ruleset: owasp-crs
+    imunifyav:
+      source: https://repo.imunify360.cloudlinux.com/defence360/imav-deploy.sh
+      install_mode: artifact-download
+  file_management:
+    manager: panel-file-manager
+    ftp: pure-ftpd
+    install_mode:
+      manager: panel-module
+      ftp: package
+  php:
+    versions: [8.1, 8.2, 8.3]
+    install_mode: package
+  other:
+    docker_manager: docker
+    git_manager: git
+    auto_ssl: letsencrypt
+    install_mode: package
+
+cyberpanel_reference:
+  repo: https://github.com/usmannasir/cyberpanel
+  branch: stable
+  local_clone_path: ./local/services/source/cyberpanel

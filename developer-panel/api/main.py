@@ -14,6 +14,7 @@ from api.updates import router as updates_router
 from api.clusters import router as clusters_router
 from api.analytics import router as analytics_router
 from api.monitoring import router as monitoring_router
+from api.software import router as software_router
 from api.auth import router as auth_router
 from api.database import init_db
 from api.config import get_settings
@@ -25,8 +26,11 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print(f"🚀 HostingSignal Developer Panel v{VERSION}")
-    await init_db()
-    print("✅ Database tables initialized")
+    try:
+        await init_db()
+        print("✅ Database tables initialized")
+    except Exception as e:
+        print(f"⚠️ Database connection failed, running in mock mode: {e}")
     yield
     print("👋 Shutting down Developer Panel")
 
@@ -56,8 +60,16 @@ app.include_router(updates_router)
 app.include_router(clusters_router)
 app.include_router(analytics_router)
 app.include_router(monitoring_router)
+app.include_router(software_router)
 
 
 @app.get("/api/health")
 async def health():
     return {"status": "healthy", "service": "developer-panel", "version": VERSION}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    # Enforcing Port 2087 for definitive HS-Panel API standard
+    uvicorn.run(app, host="0.0.0.0", port=2087)
+

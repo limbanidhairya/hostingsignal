@@ -1,0 +1,36 @@
+<div class="card">
+    <h2>List Accounts</h2>
+    <p>Manage existing hosting accounts on this server.</p>
+    
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr style="background: #f9f9f9; text-align: left;">
+            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Domain</th>
+            <th style="padding: 10px; border-bottom: 2px solid #ccc;">User</th>
+            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Package</th>
+            <th style="padding: 10px; border-bottom: 2px solid #ccc;">IP Address</th>
+            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Actions</th>
+        </tr>
+        
+        <!-- Template Toolkit loop representation over accounts array -->
+        [% FOREACH account IN accounts %]
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                <strong>[% account.domain %]</strong>
+            </td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">[% account.user %]</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">[% account.package %]</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">[% account.ip %]</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                <a href="/cpsess[% session_id %]/scripts/command?action=suspend&user=[% account.user %]" style="color: red;">Suspend</a> | 
+                <a href="/cpsess[% session_id %]/scripts/command?action=cpanel&user=[% account.user %]">cPanel</a>
+            </td>
+        </tr>
+        [% END %]
+        
+        [% IF accounts.size == 0 %]
+        <tr>
+            <td colspan="5" style="padding: 20px; text-align: center; color: #777;">No accounts found.</td>
+        </tr>
+        [% END %]
+    </table>
+</div>

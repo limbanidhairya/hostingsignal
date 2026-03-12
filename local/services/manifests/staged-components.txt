@@ -1,0 +1,12 @@
+timestamp=2026-03-12T22:06:10Z
+web_stack=openlitespeed
+db_engine=mariadb
+downloads_dir=/mnt/c/Users/Dhairya Limbani/OneDrive/Documents/Hostingsignal/local/services/downloads
+source_dir=/mnt/c/Users/Dhairya Limbani/OneDrive/Documents/Hostingsignal/local/services/source
+items:
+- phpMyAdmin
+- Rainloop
+- ConfigServer Firewall (CSF)
+- OWASP Core Rule Set (for ModSecurity)
+- ImunifyAV installer
+- CyberPanel source reference

@@ -47,8 +47,25 @@ hostingsignal/
 ## 🚀 Quick Install
 
 ```bash
-bash <(curl -sSL https://mirror.hostingsignal.in/install.sh)
+sudo ./install.sh --mode all
 ```
+
+### Service-First Install Flow (CyberPanel-aligned)
+
+```bash
+# 1) Download/stage all open-source service artifacts locally
+sudo ./install.sh --mode stage --local-root ./local/services
+
+# 2) Install system packages for selected stack
+sudo ./install.sh --mode install --db-engine mariadb --web-stack openlitespeed
+
+# 3) Wire panel paths and staged webapps
+sudo ./install.sh --mode configure --local-root ./local/services
+```
+
+Reference docs:
+- `docs/06_cyberpanel_aligned_approach.md`
+- `config/service-bundle.yml`
 
 ### Supported Operating Systems
 
@@ -70,13 +87,13 @@ bash <(curl -sSL https://mirror.hostingsignal.in/install.sh)
 
 ### Website Management
 - Create/delete websites and subdomains
-- OpenLiteSpeed integration with PHP 8.0/8.1/8.2
+- OpenLiteSpeed integration (default) with multi-PHP management
 - SSL management (Let's Encrypt auto-issue)
 - Per-site disk usage tracking
 
 ### DNS Management
 - Zone editor with full record support (A, AAAA, CNAME, MX, TXT, NS, SRV, CAA)
-- Zone export/import (BIND format)
+- PowerDNS-backed management (lightweight and fast)
 - Nameserver management
 
 ### Database Management
@@ -87,7 +104,8 @@ bash <(curl -sSL https://mirror.hostingsignal.in/install.sh)
 ### Email Hosting
 - Mail domain management
 - Email account CRUD with quotas
-- SpamAssassin integration
+- Rainloop Webmail integration
+- Postfix + Dovecot service integration
 - DKIM/SPF support
 
 ### Backup System
@@ -97,10 +115,15 @@ bash <(curl -sSL https://mirror.hostingsignal.in/install.sh)
 - Backup restoration
 
 ### Security
-- Firewall manager (UFW/firewalld)
-- Fail2Ban integration with custom jails
+- ConfigServer Firewall (CSF)
+- ModSecurity (WAF) with OWASP CRS
+- ImunifyAV malware scanning
 - SSL auto-renewal
 - Login protection & rate limiting
+
+### File and DevOps Tools
+- File Manager and Pure-FTPd integration
+- Docker Manager and Git Manager modules
 
 ### Monitoring
 - Real-time CPU, RAM, disk, network stats
@@ -167,7 +190,7 @@ kubectl apply -f deployment/k8s-deployment.yml
 cd backend
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8080
 
 # Frontend (separate terminal)
 cd frontend
@@ -181,7 +204,7 @@ Open [http://localhost:3000](http://localhost:3000)
 
 | Service | Description |
 |---|---|
-| `hostingsignal-api` | FastAPI backend (port 8000) |
+| `hostingsignal-api` | FastAPI backend (port 8080) |
 | `hostingsignal-web` | Next.js frontend (port 3000) |
 | `hostingsignal-daemon` | Background task scheduler |
 | `hostingsignal-monitor` | System monitoring daemon |

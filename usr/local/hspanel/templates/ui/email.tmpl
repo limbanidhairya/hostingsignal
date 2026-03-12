@@ -1,0 +1,94 @@
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Email Accounts</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Create and manage mailboxes for your domains</p>
+    </div>
+    <button class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2" onclick="document.getElementById('addEmailForm').classList.toggle('hidden')">
+        <span class="material-symbols-outlined">add</span> Create Email
+    </button>
+</div>
+
+<div id="addEmailForm" class="hidden glass rounded-xl p-6 mb-8 border border-primary/30 shadow-[0_0_15px_rgba(7,182,213,0.15)] relative">
+    <button class="absolute top-4 right-4 text-slate-400 hover:text-slate-200" onclick="document.getElementById('addEmailForm').classList.add('hidden')">
+        <span class="material-symbols-outlined">close</span>
+    </button>
+    <h3 class="text-lg font-semibold text-slate-100 mb-4">Create Email Account</h3>
+    <form method="POST" action="/api/mail/create">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                <div class="flex gap-2 items-center">
+                    <input type="text" name="user" class="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" placeholder="info" required>
+                    <span class="text-slate-500 font-bold">@</span>
+                    <select name="domain" class="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none">
+                        <TMPL_LOOP NAME=domain_options>
+                            <option value="<TMPL_VAR NAME=domain>"><TMPL_VAR NAME=domain></option>
+                        </TMPL_LOOP>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+                <input type="password" name="password" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" required>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Quota (MB) <span class="text-xs font-normal lowercase text-slate-500 ml-2">(Set to 0 for unlimited)</span></label>
+                <input type="number" name="quota_mb" class="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2.5 text-sm text-slate-200 focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none" value="500">
+            </div>
+            <div>
+                <button type="submit" class="w-full py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">Create Account</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="glass rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-800/30 border-b border-border-dark">
+                <tr>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Account</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Usage</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Quota</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                    <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-dark/50 text-sm">
+                <TMPL_LOOP NAME=accounts>
+                <tr class="hover:bg-slate-800/20 transition-colors">
+                    <td class="px-6 py-4 font-bold text-slate-200 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-slate-400">
+                            <span class="material-symbols-outlined text-[18px]">mail</span>
+                        </div>
+                        <TMPL_VAR NAME=email>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-24 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
+                                <div class="h-full rounded-full <TMPL_IF NAME=is_full>bg-red-500<TMPL_ELSE>bg-primary</TMPL_IF>" style="width: <TMPL_VAR NAME=usage_percent>%"></div>
+                            </div>
+                            <span class="font-mono text-xs text-slate-400"><TMPL_VAR NAME=used_mb> MB</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 rounded bg-slate-700/50 border border-slate-600 font-mono text-xs"><TMPL_VAR NAME=quota_mb> MB</span></td>
+                    <td class="px-6 py-4"><span class="px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20"><TMPL_VAR NAME=status></span></td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Webmail">
+                            <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+                        </button>
+                        <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Change Password">
+                            <span class="material-symbols-outlined text-[18px]">key</span>
+                        </button>
+                        <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                    </td>
+                </tr>
+                </TMPL_LOOP>
+            </tbody>
+        </table>
+    </div>
+</div>

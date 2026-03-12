@@ -1,89 +1,84 @@
-"""Developer Panel — License Management API"""
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional, List
+"""Developer Panel — License Management API (service-backed)."""
+from __future__ import annotations
+
 from datetime import datetime, timezone
-import secrets
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
+from ..services.license_sync import license_sync
 
 router = APIRouter(prefix="/api/licenses", tags=["Licenses"])
-
-# In-memory store for dev; production uses PostgreSQL
-_licenses: dict = {}
 
 
 class CreateLicenseRequest(BaseModel):
     customer_email: str
-    tier: str = "professional"  # starter | professional | business | enterprise
+    tier: str = "professional"
     max_domains: int = 20
     valid_days: int = 365
     ip_binding: Optional[str] = None
     domain_binding: Optional[str] = None
 
 
-class LicenseResponse(BaseModel):
-    key: str
-    tier: str
-    customer_email: str
-    max_domains: int
-    status: str
-    created_at: str
-    expires_at: str
+def _fallback_domain(email: str) -> str:
+    parts = email.split("@", 1)
+    return parts[1] if len(parts) == 2 else "example.com"
 
 
-@router.post("/create", response_model=LicenseResponse)
-async def create_license(body: CreateLicenseRequest):
-    """Create a new license key."""
-    key = f"HS-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}-{secrets.token_hex(4).upper()}"
-    now = datetime.now(timezone.utc)
-    license_data = {
-        "key": key,
-        "tier": body.tier,
-        "customer_email": body.customer_email,
-        "max_domains": body.max_domains,
-        "status": "inactive",
-        "ip_binding": body.ip_binding,
-        "domain_binding": body.domain_binding,
-        "created_at": now.isoformat(),
-        "expires_at": (now.replace(year=now.year + 1)).isoformat(),
-        "activations": [],
-    }
-    _licenses[key] = license_data
-    return LicenseResponse(**license_data)
+@router.post("/create")
+async def create_license(body: CreateLicenseRequest) -> dict:
+    try:
+        payload = await license_sync.create_license(
+            plan=body.tier,
+            domain=body.domain_binding or _fallback_domain(body.customer_email),
+            max_domains=body.max_domains,
+            expiry_days=body.valid_days,
+            features={
+                "ip_binding": body.ip_binding,
+                "customer_email": body.customer_email,
+            },
+        )
+        return {"success": True, "data": payload}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"License service error: {exc}") from exc
 
 
 @router.get("/list")
-async def list_licenses(status: Optional[str] = None, tier: Optional[str] = None):
-    """List all licenses with optional filtering."""
-    results = list(_licenses.values())
-    if status:
-        results = [l for l in results if l["status"] == status]
-    if tier:
-        results = [l for l in results if l["tier"] == tier]
-    return {"licenses": results, "total": len(results)}
+async def list_licenses(
+    status: Optional[str] = None,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=50, ge=1, le=200),
+) -> dict:
+    try:
+        payload = await license_sync.list_licenses(page=page, per_page=per_page, status=status)
+        return {"success": True, "data": payload}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"License service error: {exc}") from exc
 
 
 @router.get("/{key}")
-async def get_license(key: str):
-    """Get license info by key."""
-    if key not in _licenses:
-        raise HTTPException(status_code=404, detail="License not found")
-    return _licenses[key]
+async def get_license(key: str) -> dict:
+    try:
+        payload = await license_sync.get_license_info(key)
+        return {"success": True, "data": payload}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=404, detail=f"License not found or service error: {exc}") from exc
 
 
 @router.post("/{key}/revoke")
-async def revoke_license(key: str):
-    """Revoke a license."""
-    if key not in _licenses:
-        raise HTTPException(status_code=404, detail="License not found")
-    _licenses[key]["status"] = "revoked"
-    return {"status": "success", "message": f"License {key} revoked"}
+async def revoke_license(key: str, reason: str = "Revoked from developer panel") -> dict:
+    try:
+        payload = await license_sync.revoke_license(key, reason=reason)
+        return {"success": True, "data": payload}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"License service error: {exc}") from exc
 
 
 @router.get("/stats/overview")
-async def license_stats():
-    """Get license statistics."""
-    total = len(_licenses)
-    active = sum(1 for l in _licenses.values() if l["status"] == "active")
-    inactive = sum(1 for l in _licenses.values() if l["status"] == "inactive")
-    revoked = sum(1 for l in _licenses.values() if l["status"] == "revoked")
-    return {"total": total, "active": active, "inactive": inactive, "revoked": revoked}
+async def license_stats() -> dict:
+    try:
+        payload = await license_sync.get_license_stats()
+        return {"success": True, "data": payload, "generated_at": datetime.now(timezone.utc).isoformat()}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"License service error: {exc}") from exc

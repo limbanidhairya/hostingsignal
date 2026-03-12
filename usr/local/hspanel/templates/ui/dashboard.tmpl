@@ -1,0 +1,188 @@
+<section>
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+        <div>
+            <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                Welcome back, <TMPL_VAR NAME=user>
+                <span class="material-symbols-outlined text-primary">waving_hand</span>
+            </h2>
+            <p class="text-slate-500 dark:text-slate-400 mt-1">Manage your domain resources and hosting environment from one place for <TMPL_VAR NAME=domain>.</p>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+            <button class="px-4 py-1.5 bg-white dark:bg-slate-700 shadow-sm rounded-md text-sm font-semibold text-slate-900 dark:text-white">Overview</button>
+            <button class="px-4 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-200">Resources</button>
+            <button class="px-4 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-200">Activity</button>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:border-primary/50 transition-all">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-2.5 bg-blue-500/10 rounded-lg text-blue-500 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined">language</span>
+                </div>
+                <span class="text-xs font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded">Active</span>
+            </div>
+            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium">Domains</h3>
+            <p class="text-2xl font-bold mt-1 text-slate-900 dark:text-white"><TMPL_VAR NAME=active_domains> <span class="text-sm font-normal text-slate-500">Active</span></p>
+            <a href="/domains" class="mt-4 block w-full text-center py-2 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Manage Domains</a>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:border-primary/50 transition-all">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-2.5 bg-primary/10 rounded-lg text-primary group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined">mail</span>
+                </div>
+            </div>
+            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium">Email Accounts</h3>
+            <p class="text-2xl font-bold mt-1 text-slate-900 dark:text-white"><TMPL_VAR NAME=active_emails> <span class="text-sm font-normal text-slate-500">Accounts</span></p>
+            <a href="/software/webmail" target="_blank" class="mt-4 block w-full text-center py-2 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">View Inbox</a>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:border-primary/50 transition-all">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-2.5 bg-amber-500/10 rounded-lg text-amber-500 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined">database</span>
+                </div>
+            </div>
+            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium">Databases</h3>
+            <p class="text-2xl font-bold mt-1 text-slate-900 dark:text-white">5 <span class="text-sm font-normal text-slate-500">MySQL</span></p>
+            <a href="/software/phpmyadmin" target="_blank" class="mt-4 block w-full text-center py-2 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Manage DBs</a>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm group hover:border-primary/50 transition-all">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-2.5 bg-purple-500/10 rounded-lg text-purple-500 group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined">cloud_upload</span>
+                </div>
+                <span class="text-xs font-bold text-slate-500 px-2 py-0.5"><TMPL_VAR NAME=disk_percent>% used</span>
+            </div>
+            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium">Storage Usage</h3>
+            <p class="text-2xl font-bold mt-1 text-slate-900 dark:text-white"><TMPL_VAR NAME=disk_used> GB <span class="text-sm font-normal text-slate-500">/ <TMPL_VAR NAME=disk_total> GB</span></p>
+            <a href="/filemanager" class="mt-4 block w-full text-center py-2 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Open Files</a>
+        </div>
+    </div>
+</section>
+
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <span class="material-symbols-outlined">dns</span>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 font-medium">DNS Zones</p>
+            <p class="text-sm font-bold text-slate-900 dark:text-white">3 Configured</p>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <span class="material-symbols-outlined">history</span>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 font-medium">Backups</p>
+            <p class="text-sm font-bold text-slate-900 dark:text-white">Last: 2h ago</p>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <span class="material-symbols-outlined">verified_user</span>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 font-medium">SSL Certificates</p>
+            <p class="text-sm font-bold text-slate-900 dark:text-white">3 Auto-renewing</p>
+        </div>
+    </div>
+    <div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <span class="material-symbols-outlined">schedule</span>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 font-medium">Cron Jobs</p>
+            <p class="text-sm font-bold text-slate-900 dark:text-white">4 Active Tasks</p>
+        </div>
+    </div>
+</section>
+
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 dark:text-white">Bandwidth Usage</h3>
+            <span class="text-xs font-bold text-slate-500 uppercase">This Month</span>
+        </div>
+        <div class="p-6">
+            <div class="flex items-end justify-between mb-2">
+                <p class="text-3xl font-black text-slate-900 dark:text-white"><TMPL_VAR NAME=bw_used> <span class="text-lg font-medium text-slate-500">GB</span></p>
+                <p class="text-sm text-slate-500 font-medium pb-1">Limit: <TMPL_VAR NAME=bw_total> GB</p>
+            </div>
+            <div class="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full bg-primary rounded-full" style="width: <TMPL_VAR NAME=bw_percent>%"></div>
+            </div>
+            <div class="grid grid-cols-7 gap-1 mt-6">
+                <!-- Bar chart mockup -->
+                <div class="h-16 bg-primary/20 rounded-t-md relative flex flex-col justify-end"><div class="h-[40%] bg-primary rounded-t-sm w-full"></div></div>
+                <div class="h-16 bg-primary/20 rounded-t-md relative flex flex-col justify-end"><div class="h-[60%] bg-primary rounded-t-sm w-full"></div></div>
+                <div class="h-16 bg-primary/20 rounded-t-md relative flex flex-col justify-end"><div class="h-[80%] bg-primary rounded-t-sm w-full"></div></div>
+                <div class="h-16 bg-primary/20 rounded-t-md relative flex flex-col justify-end"><div class="h-[55%] bg-primary rounded-t-sm w-full"></div></div>
+                <div class="h-16 bg-primary/20 rounded-t-md relative flex flex-col justify-end"><div class="h-[70%] bg-primary rounded-t-sm w-full"></div></div>
+                <div class="h-16 bg-primary/20 rounded-t-md relative flex flex-col justify-end"><div class="h-[90%] bg-primary rounded-t-sm w-full shadow-[0_0_10px_rgba(7,182,213,0.5)]"></div></div>
+                <div class="h-16 bg-primary/20 rounded-t-md relative flex flex-col justify-end"><div class="h-[30%] bg-primary rounded-t-sm w-full"></div></div>
+            </div>
+            <div class="flex justify-between mt-2 text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 dark:text-white">Disk Resource Allocation</h3>
+            <span class="text-xs font-bold text-slate-500 uppercase">Live Metrics</span>
+        </div>
+        <div class="p-6 space-y-6">
+            <div>
+                <div class="flex justify-between text-xs font-bold mb-2">
+                    <span class="text-slate-600 dark:text-slate-400">Web Files (HTTP/S)</span>
+                    <span class="text-slate-900 dark:text-white">28.4 GB</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500 rounded-full w-[28%]"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs font-bold mb-2">
+                    <span class="text-slate-600 dark:text-slate-400">Databases (MySQL)</span>
+                    <span class="text-slate-900 dark:text-white">8.2 GB</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-amber-500 rounded-full w-[8%]"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs font-bold mb-2">
+                    <span class="text-slate-600 dark:text-slate-400">Email Storage</span>
+                    <span class="text-slate-900 dark:text-white">5.7 GB</span>
+                </div>
+                <div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-purple-500 rounded-full w-[6%]"></div>
+                </div>
+            </div>
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800 flex gap-6">
+                <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                    <span class="text-[11px] font-bold text-slate-500">Web</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                    <span class="text-[11px] font-bold text-slate-500">DB</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-purple-500"></div>
+                    <span class="text-[11px] font-bold text-slate-500">Email</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                    <span class="text-[11px] font-bold text-slate-500">Free</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

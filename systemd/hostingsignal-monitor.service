@@ -8,10 +8,9 @@ Wants=redis.service
 Type=exec
 User=root
 Group=root
-WorkingDirectory=/usr/local/hostingsignal/backend
-Environment="PATH=/usr/local/hostingsignal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
-Environment="PYTHONPATH=/usr/local/hostingsignal/backend"
-ExecStart=/usr/local/hostingsignal/backend/venv/bin/python -m app.daemon.monitor_daemon
+WorkingDirectory=/usr/local/hspanel
+Environment="PATH=/usr/local/hspanel/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/local/hspanel/backend/venv/bin/python /usr/local/hspanel/append_system_monitor.py
 Restart=always
 RestartSec=10
 StandardOutput=journal

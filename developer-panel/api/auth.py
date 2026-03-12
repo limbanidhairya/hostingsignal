@@ -1,12 +1,23 @@
-"""Developer Panel — Auth API"""
-from fastapi import APIRouter, HTTPException
+"""Developer Panel — Auth API (DB + JWT)."""
+from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from pydantic import BaseModel
-import secrets, hashlib, time
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .config import get_settings
+from .database import DevAdmin, get_db
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
-
-# In production, use a DB - this is for bootstrapping
-_sessions: dict = {}
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer = HTTPBearer(auto_error=False)
+settings = get_settings()
 
 
 class LoginRequest(BaseModel):
@@ -20,26 +31,73 @@ class TokenResponse(BaseModel):
     expires_in: int = 86400
 
 
+def _create_access_token(subject: str, role: str, expires_hours: int) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(hours=expires_hours)
+    payload = {
+        "sub": subject,
+        "role": role,
+        "exp": int(expire.timestamp()),
+    }
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+
+async def _get_current_admin(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    db: AsyncSession = Depends(get_db),
+) -> DevAdmin:
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="Missing authorization token")
+
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=401, detail="Invalid token subject")
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
+
+    result = await db.execute(select(DevAdmin).where(DevAdmin.email == email, DevAdmin.is_active == True))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        raise HTTPException(status_code=401, detail="Admin account not found")
+    return admin
+
+
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest):
-    """Authenticate developer/admin user."""
-    # In production, validate against database
-    if body.email == "admin@hostingsignal.com":
-        token = secrets.token_urlsafe(48)
-        _sessions[token] = {"email": body.email, "role": "superadmin", "exp": time.time() + 86400}
-        return TokenResponse(access_token=token, expires_in=86400)
-    raise HTTPException(status_code=401, detail="Invalid credentials")
+async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+    """Authenticate developer/admin user against DB."""
+    result = await db.execute(select(DevAdmin).where(DevAdmin.email == body.email, DevAdmin.is_active == True))
+    admin = result.scalar_one_or_none()
+    if not admin:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not pwd_context.verify(body.password, admin.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    admin.last_login = datetime.utcnow()
+    await db.commit()
+
+    token = _create_access_token(
+        subject=admin.email,
+        role=admin.role,
+        expires_hours=settings.JWT_EXPIRY_HOURS,
+    )
+    return TokenResponse(access_token=token, expires_in=settings.JWT_EXPIRY_HOURS * 3600)
 
 
 @router.post("/logout")
-async def logout(token: str):
-    _sessions.pop(token, None)
+async def logout():
+    # Stateless JWT flow: client discards token.
     return {"status": "logged_out"}
 
 
 @router.get("/me")
-async def me(token: str):
-    session = _sessions.get(token)
-    if not session or session["exp"] < time.time():
-        raise HTTPException(status_code=401, detail="Session expired")
-    return {"email": session["email"], "role": session["role"]}
+async def me(admin: DevAdmin = Depends(_get_current_admin)):
+    return {
+        "id": str(admin.id),
+        "email": admin.email,
+        "username": admin.username,
+        "role": admin.role,
+        "is_active": admin.is_active,
+    }

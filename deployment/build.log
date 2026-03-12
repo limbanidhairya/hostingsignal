@@ -1,0 +1,188 @@
+time="2026-03-09T01:51:33+05:30" level=warning msg="C:\\Users\\Dhairya Limbani\\OneDrive\\Documents\\Hostingsignal\\deployment\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.69kB done
+#1 DONE 0.0s
+
+#2 [backend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 603B done
+#2 DONE 0.0s
+
+#3 [frontend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 563B done
+#3 DONE 0.0s
+
+#4 [license-server internal] load build definition from Dockerfile
+#4 transferring dockerfile: 827B done
+#4 DONE 0.0s
+
+#5 [license-server internal] load metadata for docker.io/library/python:3.12-slim
+#5 DONE 1.3s
+
+#6 [license-server internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [backend internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#8 DONE 1.3s
+
+#9 [frontend internal] load .dockerignore
+#9 transferring context: 2B done
+#9 DONE 0.0s
+
+#10 [frontend internal] load build context
+#10 DONE 0.0s
+
+#11 [backend 1/8] FROM docker.io/library/python:3.12-slim@sha256:ccc7089399c8bb65dd1fb3ed6d55efa538a3f5e7fca3f5988ac3b5b87e593bf0
+#11 resolve docker.io/library/python:3.12-slim@sha256:ccc7089399c8bb65dd1fb3ed6d55efa538a3f5e7fca3f5988ac3b5b87e593bf0 0.0s done
+#11 DONE 0.0s
+
+#12 [license-server internal] load build context
+#12 transferring context: 1.07kB done
+#12 DONE 0.0s
+
+#13 [license-server 3/8] RUN apt-get update && apt-get install -y --no-install-recommends     gcc libpq-dev &&     rm -rf /var/lib/apt/lists/*
+#13 CACHED
+
+#14 [license-server 7/8] RUN mkdir -p /opt/hostingsignal-license/logs
+#14 CACHED
+
+#15 [license-server 4/8] COPY requirements.txt .
+#15 CACHED
+
+#16 [license-server 6/8] COPY . .
+#16 CACHED
+
+#17 [license-server 5/8] RUN pip install --no-cache-dir -r requirements.txt
+#17 CACHED
+
+#18 [license-server 2/8] WORKDIR /opt/hostingsignal-license
+#18 CACHED
+
+#19 [license-server 8/8] RUN useradd -r -s /bin/false hslic && chown -R hslic:hslic /opt/hostingsignal-license
+#19 CACHED
+
+#20 [license-server] exporting to image
+#20 exporting layers done
+#20 ...
+
+#21 [frontend builder 1/6] FROM docker.io/library/node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa
+#21 resolve docker.io/library/node:20-alpine@sha256:b88333c42c23fbd91596ebd7fd10de239cedab9617de04142dde7315e3bc0afa 0.0s done
+#21 DONE 0.0s
+
+#20 [license-server] exporting to image
+#20 exporting manifest sha256:b50fe014fc8b4ef3d08f2e396c24affa8707263cc577abfdf6d9287ed1ea552c done
+#20 exporting config sha256:1aee9c9e0b4844508a5c6eb471fe212e805240f6e1e0114b2384bef5ac0c474b done
+#20 exporting attestation manifest sha256:8317d380d378dc723d9289bc89a700e668ef4a0bf3f24f182fbc4b56a968f475 0.0s done
+#20 exporting manifest list sha256:8c8af7f4c75ab8f75e1469990b08fb91a823b7c99881fc156bd2e5c8a9b74378 0.0s done
+#20 naming to docker.io/library/deployment-license-server:latest
+#20 naming to docker.io/library/deployment-license-server:latest done
+#20 unpacking to docker.io/library/deployment-license-server:latest 0.0s done
+#20 DONE 0.2s
+
+#22 [backend internal] load build context
+#22 transferring context: 309.60kB 0.2s done
+#22 DONE 0.2s
+
+#23 [backend 3/6] RUN apt-get update && apt-get install -y --no-install-recommends     gcc libpq-dev curl &&     rm -rf /var/lib/apt/lists/*
+#23 CACHED
+
+#24 [backend 5/6] RUN pip install --no-cache-dir -r requirements.txt
+#24 CACHED
+
+#25 [backend 4/6] COPY requirements.txt .
+#25 CACHED
+
+#26 [backend 2/6] WORKDIR /usr/local/hostingsignal/backend
+#26 CACHED
+
+#27 [backend 6/6] COPY . .
+#27 CACHED
+
+#28 [backend] exporting to image
+#28 exporting layers done
+#28 exporting manifest sha256:3418acb0ce0cb65cc3a93c16d6801507b9710b443d5f16b83329274b5ff791d5 done
+#28 exporting config sha256:ae3f12cccc527c7417fb62450f016a8efc930fbf939d9163363c5ebb7846ce0b done
+#28 exporting attestation manifest sha256:9d663d7d0a72c401859df2ec40c84dc272c82cd447c604225ba7252391f249d0 0.1s done
+#28 exporting manifest list sha256:913101e1e5cda91f5c509fd1a3bede52b73930a536878540054918927aea011a
+#28 exporting manifest list sha256:913101e1e5cda91f5c509fd1a3bede52b73930a536878540054918927aea011a 0.0s done
+#28 naming to docker.io/library/deployment-backend:latest done
+#28 unpacking to docker.io/library/deployment-backend:latest 0.0s done
+#28 DONE 0.2s
+
+#29 [license-server] resolving provenance for metadata file
+#29 DONE 0.0s
+
+#10 [frontend internal] load build context
+#10 ...
+
+#30 [backend] resolving provenance for metadata file
+#30 DONE 0.0s
+
+#10 [frontend internal] load build context
+#10 transferring context: 2.04MB 1.2s done
+#10 DONE 1.2s
+
+#31 [frontend runner 3/5] COPY --from=builder /app/.next/standalone ./
+#31 CACHED
+
+#32 [frontend builder 6/6] RUN npm run build
+#32 CACHED
+
+#33 [frontend builder 2/6] WORKDIR /app
+#33 CACHED
+
+#34 [frontend builder 3/6] COPY package*.json ./
+#34 CACHED
+
+#35 [frontend builder 4/6] RUN npm ci
+#35 CACHED
+
+#36 [frontend builder 5/6] COPY . .
+#36 CACHED
+
+#37 [frontend runner 4/5] COPY --from=builder /app/.next/static ./.next/static
+#37 CACHED
+
+#38 [frontend runner 5/5] COPY --from=builder /app/public ./public
+#38 CACHED
+
+#39 [frontend] exporting to image
+#39 exporting layers done
+#39 exporting manifest sha256:70686139199c6d26eb46f4679e0df5101bccc9bfe1641252e3477d127636fd08 done
+#39 exporting config sha256:2724720a996e3caf7cfb951f105fe86a21e60701b3e3a073026c0febe4861bb3 done
+#39 exporting attestation manifest sha256:0278ba810e3bbe48b7c700b644054a80aa6089aa13a2e65a9e79129032ca8221 0.0s done
+#39 exporting manifest list sha256:54252fffa11ad2b5bde3bb4f359db6e456feed3a5cd10b19ac53b2db32709e01 0.0s done
+#39 naming to docker.io/library/deployment-frontend:latest done
+#39 unpacking to docker.io/library/deployment-frontend:latest done
+#39 DONE 0.1s
+
+#40 [frontend] resolving provenance for metadata file
+#40 DONE 0.0s
+ deployment-backend  Built
+ deployment-frontend  Built
+ deployment-license-server  Built
+ Container hs-postgres  Running
+ Container hs-redis  Running
+ Container hs-rabbitmq  Running
+ Container hs-license-server  Recreate
+ Container hs-backend  Recreate
+ Container hs-backend  Recreated
+ Container hs-frontend  Recreate
+ Container hs-frontend  Recreated
+ Container hs-license-server  Recreated
+ Container hs-redis  Waiting
+ Container hs-postgres  Waiting
+ Container hs-redis  Waiting
+ Container hs-postgres  Waiting
+ Container hs-redis  Healthy
+ Container hs-postgres  Healthy
+ Container hs-license-server  Starting
+ Container hs-postgres  Healthy
+ Container hs-redis  Healthy
+ Container hs-backend  Starting
+ Container hs-license-server  Started
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint hs-backend (66f7ba81b147ff6dd78ec88faedfb4585786dba7114d27bf7ef35daaf13ce8aa): Bind for 0.0.0.0:8000 failed: port is already allocated

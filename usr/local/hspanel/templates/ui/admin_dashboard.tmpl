@@ -1,0 +1,247 @@
+<div class="flex-1 space-y-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="glass p-6 rounded-xl flex flex-col gap-1">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-slate-400 text-sm font-medium">Uptime</span>
+                <span class="material-symbols-outlined text-green-500">timer</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-100">99.97%</div>
+            <div class="text-xs text-green-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">trending_up</span>
+                +0.01% since yesterday
+            </div>
+        </div>
+        <div class="glass p-6 rounded-xl flex flex-col gap-1">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-slate-400 text-sm font-medium">Active Accounts</span>
+                <span class="material-symbols-outlined text-primary">person_check</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-100"><TMPL_VAR NAME=total_accounts></div>
+            <div class="text-xs text-primary flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">trending_up</span>
+                +12 new this month
+            </div>
+        </div>
+        <div class="glass p-6 rounded-xl flex flex-col gap-1">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-slate-400 text-sm font-medium">Total Domains</span>
+                <span class="material-symbols-outlined text-accent">language</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-100"><TMPL_VAR NAME=total_domains></div>
+            <div class="text-xs text-accent flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">trending_up</span>
+                +45 domains added
+            </div>
+        </div>
+        <div class="glass p-6 rounded-xl flex flex-col gap-1">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-slate-400 text-sm font-medium">Server Status</span>
+                <span class="material-symbols-outlined text-green-500">check_circle</span>
+            </div>
+            <div class="text-2xl font-bold text-slate-100 uppercase tracking-wider">Online</div>
+            <div class="text-xs text-slate-500">Operational across all zones</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 glass rounded-xl p-8 flex flex-col gap-8">
+            <h3 class="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">bar_chart</span>
+                Resource Performance
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="flex flex-col items-center">
+                    <div class="relative w-48 h-48 flex items-center justify-center">
+                        <svg class="w-full h-full -rotate-90">
+                            <circle class="text-slate-800" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-width="12"></circle>
+                            <circle cx="96" cy="96" fill="transparent" r="80" stroke="url(#cpuGradient)" stroke-dasharray="502.6" stroke-dashoffset="331.7" stroke-linecap="round" stroke-width="12"></circle>
+                            <defs>
+                                <linearGradient id="cpuGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+                                    <stop offset="0%" stop-color="#3c83f6"></stop>
+                                    <stop offset="100%" stop-color="#00d4ff"></stop>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-4xl font-bold text-slate-100"><TMPL_VAR NAME=cpu_percent>%</span>
+                            <span class="text-xs text-slate-400 font-medium uppercase tracking-widest">CPU Usage</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="relative w-48 h-48 flex items-center justify-center">
+                        <svg class="w-full h-full -rotate-90">
+                            <circle class="text-slate-800" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-width="12"></circle>
+                            <circle cx="96" cy="96" fill="transparent" r="80" stroke="#3c83f6" stroke-dasharray="502.6" stroke-dashoffset="191.0" stroke-linecap="round" stroke-width="12"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span class="text-4xl font-bold text-slate-100"><TMPL_VAR NAME=ram_percent>%</span>
+                            <span class="text-xs text-slate-400 font-medium uppercase tracking-widest">RAM Usage</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-4 text-xs">
+                        <span class="flex items-center gap-1 text-slate-400"><TMPL_VAR NAME=ram_used> GB / <TMPL_VAR NAME=ram_total> GB Used</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 pt-6 border-t border-slate-700/50 flex flex-col gap-4">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-400 font-medium">Disk Usage (System Root)</span>
+                    <span class="text-slate-100 font-bold"><TMPL_VAR NAME=disk_percent>%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-700/50">
+                    <div class="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500" style="width: <TMPL_VAR NAME=disk_percent>%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-6 flex flex-col gap-6">
+            <h3 class="text-lg font-semibold text-slate-100 flex items-center justify-between">
+                Service Status
+                <span class="text-xs font-normal text-slate-500 uppercase tracking-widest">Active</span>
+            </h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">public</span>
+                        <span class="text-sm font-medium">Web Server (Nginx)</span>
+                    </div>
+                    <span class="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                        RUNNING
+                    </span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-slate-800/40 rounded-lg border border-slate-700/50">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">database</span>
+                        <span class="text-sm font-medium">MySQL Database</span>
+                    </div>
+                    <span class="flex items-center gap-1.5 text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+                        <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                        RUNNING
+                    </span>
+                </div>
+                <!-- ... additional services ... -->
+            </div>
+            <button class="w-full mt-2 py-2.5 border border-slate-700 rounded-lg text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-all">
+                Restart All Services
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-8 mb-8">
+        <div class="glass rounded-xl p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-slate-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">apps</span>
+                    Software Library & Provisioning
+                </h3>
+                <button class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">Check for Updates</button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Software Cards -->
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                            <span class="material-symbols-outlined">public</span>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-green-500/10 text-green-400 border border-green-500/20">INSTALLED (1.24)</span>
+                    </div>
+                    <div>
+                        <h4 class="text-slate-100 font-bold">Nginx Web Server</h4>
+                        <p class="text-xs text-slate-400 mt-1">High-performance HTTP server and reverse proxy.</p>
+                    </div>
+                    <div class="flex gap-2 mt-auto">
+                        <button class="flex-1 py-2 text-xs font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors border border-slate-600/50">Configure</button>
+                    </div>
+                </div>
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                            <span class="material-symbols-outlined">code</span>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-green-500/10 text-green-400 border border-green-500/20">INSTALLED (8.3)</span>
+                    </div>
+                    <div>
+                        <h4 class="text-slate-100 font-bold">PHP-FPM</h4>
+                        <p class="text-xs text-slate-400 mt-1">PHP FastCGI Process Manager for web apps.</p>
+                    </div>
+                    <div class="flex gap-2 mt-auto">
+                        <button class="flex-1 py-2 text-xs font-semibold text-slate-300 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors border border-slate-600/50">Configure</button>
+                    </div>
+                </div>
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500">
+                            <span class="material-symbols-outlined">database</span>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-slate-700 text-slate-300 border border-slate-600/50">AVAILABLE (8.0)</span>
+                    </div>
+                    <div>
+                        <h4 class="text-slate-100 font-bold">MySQL Server</h4>
+                        <p class="text-xs text-slate-400 mt-1">The world's most popular open-source database.</p>
+                    </div>
+                    <div class="flex gap-2 mt-auto">
+                        <button class="flex-1 py-2 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors shadow-md shadow-primary/20">Install Package</button>
+                    </div>
+                </div>
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 flex flex-col gap-4">
+                    <div class="flex items-center justify-between">
+                        <div class="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">
+                            <span class="material-symbols-outlined">javascript</span>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-bold rounded bg-slate-700 text-slate-300 border border-slate-600/50">AVAILABLE (20.x)</span>
+                    </div>
+                    <div>
+                        <h4 class="text-slate-100 font-bold">Node.js Runtime</h4>
+                        <p class="text-xs text-slate-400 mt-1">JavaScript runtime built on Chrome's V8 engine.</p>
+                    </div>
+                    <div class="flex gap-2 mt-auto">
+                        <button class="flex-1 py-2 text-xs font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors shadow-md shadow-primary/20">Install Package</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
+        <div class="xl:col-span-3 glass rounded-xl overflow-hidden">
+            <div class="px-8 py-6 border-b border-slate-700/50 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-100">Recent Activity Log</h3>
+                <button class="text-primary text-sm font-medium hover:underline">View All Logs</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-800/30 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                        <tr>
+                            <th class="px-8 py-4">Event</th>
+                            <th class="px-8 py-4">IP Address</th>
+                            <th class="px-8 py-4">Timestamp</th>
+                            <th class="px-8 py-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/50 text-sm">
+                        <tr class="hover:bg-slate-800/20 transition-colors">
+                            <td class="px-8 py-4 font-medium text-slate-200">Admin Login Success</td>
+                            <td class="px-8 py-4 text-slate-400">192.168.1.1</td>
+                            <td class="px-8 py-4 text-slate-400">2026-03-12 23:55:10</td>
+                            <td class="px-8 py-4"><span class="px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20 uppercase">Success</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="glass rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-slate-100 mb-6">Quick Actions</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <button class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-all group">
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-primary">refresh</span>
+                    <span class="text-xs font-medium text-slate-300">Reboot</span>
+                </button>
+                <button class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-all group">
+                    <span class="material-symbols-outlined text-slate-400 group-hover:text-accent">backup</span>
+                    <span class="text-xs font-medium text-slate-300">Backup</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

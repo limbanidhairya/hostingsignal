@@ -8,11 +8,12 @@ Wants=hostingsignal-api.service
 Type=exec
 User=root
 Group=root
-WorkingDirectory=/usr/local/hostingsignal/frontend
+WorkingDirectory=/usr/local/hspanel/developer-panel/web
 Environment="NODE_ENV=production"
 Environment="PORT=3000"
+Environment="HOSTNAME=0.0.0.0"
 Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-ExecStart=/usr/bin/npm start
+ExecStart=/usr/bin/node /usr/local/hspanel/developer-panel/web/.next/standalone/server.js
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5

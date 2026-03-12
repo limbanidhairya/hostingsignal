@@ -1,0 +1,21 @@
+[Unit]
+Description=HostingSignal Task Queue Daemon
+Documentation=https://docs.hostingsignal.com
+After=network.target hostingsignal-daemon.service
+Wants=hostingsignal-daemon.service
+
+[Service]
+Type=exec
+User=root
+Group=root
+WorkingDirectory=/usr/local/hspanel
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/perl /usr/local/hspanel/daemon/hs-taskd.pl
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hostingsignal-taskd
+
+[Install]
+WantedBy=multi-user.target

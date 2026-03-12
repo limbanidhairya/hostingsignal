@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>cPanel - [% user %] - HostingSignal</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f9f9fa; margin: 0; padding: 0; color: #333; }
+        .topbar { background-color: #212529; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .topbar .brand { font-size: 1.2rem; font-weight: bold; letter-spacing: 1px; }
+        .topbar .user-info { font-size: 0.9rem; }
+        
+        .cpanel-container { max-width: 1200px; margin: 30px auto; display: flex; gap: 20px; padding: 0 20px; }
+        
+        .main-content { flex: 3; }
+        .sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+        
+        .panel-section { background: white; border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .panel-heading { background: #f4f6f8; border-bottom: 1px solid #e0e0e0; padding: 12px 20px; font-weight: bold; color: #444; font-size: 1.1rem; }
+        .panel-body { padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+        
+        .icon-box { text-align: center; cursor: pointer; padding: 10px; border-radius: 4px; transition: background 0.2s; text-decoration: none; color: #2c3e50; }
+        .icon-box:hover { background: #f0f4f8; }
+        .icon-box .icon { font-size: 2rem; margin-bottom: 8px; color: #f15a24; }
+        .icon-box .label { font-size: 0.85rem; }
+        
+        .stats-box { background: white; border: 1px solid #e0e0e0; border-radius: 6px; padding: 20px; }
+        .stats-box h3 { margin-top: 0; font-size: 1rem; color: #555; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem; }
+        .progress-bar { background: #e9ecef; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 5px; margin-bottom: 15px; }
+        .progress-fill { background: #f15a24; height: 100%; width: 25%; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand">HostingSignal <span style="font-weight: normal; font-size:1rem; opacity:0.8;">cPanel</span></div>
+        <div class="user-info">
+            User: <strong>[% user %]</strong> | <a href="/logout" style="color:#aaa; text-decoration:none; margin-left:10px;">Logout</a>
+        </div>
+    </div>
+    
+    <div class="cpanel-container">
+        <!-- Main Application Area -->
+        <div class="main-content">
+            
+            <div class="panel-section">
+                <div class="panel-heading">Files</div>
+                <div class="panel-body">
+                    <a href="/cpsess[% session_id %]/frontend/paper_lantern/filemanager/index.html" class="icon-box">
+                        <div class="icon">📁</div>
+                        <div class="label">File Manager</div>
+                    </a>
+                    <a href="#" class="icon-box">
+                        <div class="icon">🖼️</div>
+                        <div class="label">Images</div>
+                    </a>
+                    <a href="#" class="icon-box">
+                        <div class="icon">FTP</div>
+                        <div class="label">FTP Accounts</div>
+                    </a>
+                    <a href="#" class="icon-box">
+                        <div class="icon">💾</div>
+                        <div class="label">Backup</div>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="panel-section">
+                <div class="panel-heading">Databases</div>
+                <div class="panel-body">
+                    <a href="#" class="icon-box">
+                        <div class="icon">🐬</div>
+                        <div class="label">MySQL Databases</div>
+                    </a>
+                    <a href="/cpsess[% session_id %]/3rdparty/phpMyAdmin/index.php" class="icon-box">
+                        <div class="icon">🐘</div>
+                        <div class="label">phpMyAdmin</div>
+                    </a>
+                    <a href="#" class="icon-box">
+                        <div class="icon">🧙</div>
+                        <div class="label">MySQL DB Wizard</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-heading">Domains</div>
+                <div class="panel-body">
+                    <a href="#" class="icon-box">
+                        <div class="icon">🌐</div>
+                        <div class="label">Site Publisher</div>
+                    </a>
+                    <a href="#" class="icon-box">
+                        <div class="icon">📝</div>
+                        <div class="label">Domains</div>
+                    </a>
+                    <a href="#" class="icon-box">
+                        <div class="icon">🔗</div>
+                        <div class="label">Redirects</div>
+                    </a>
+                    <a href="#" class="icon-box">
+                        <div class="icon">⚙️</div>
+                        <div class="label">Zone Editor</div>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+        
+        <!-- Sidebar Statistics -->
+        <div class="sidebar">
+            <div class="stats-box">
+                <h3>General Information</h3>
+                <div class="stat-row"><span>Current User</span> <strong>[% user %]</strong></div>
+                <div class="stat-row"><span>Primary Domain</span> <strong>[% domain %]</strong></div>
+                <div class="stat-row"><span>Shared IP Address</span> <strong>127.0.0.1</strong></div>
+                <div class="stat-row"><span>Home Directory</span> <strong>/home/[% user %]</strong></div>
+                <div class="stat-row"><span>Theme</span> <strong>Jupiter</strong></div>
+            </div>
+            
+            <div class="stats-box">
+                <h3>Statistics</h3>
+                
+                <div class="stat-row"><span>Disk Usage</span> <span>250 MB / 1 GB</span></div>
+                <div class="progress-bar"><div class="progress-fill"></div></div>
+                
+                <div class="stat-row"><span>Bandwidth</span> <span>1.2 GB / ∞</span></div>
+                <div class="progress-bar"><div class="progress-fill" style="width:10%; background:#28a745;"></div></div>
+                
+                <div class="stat-row"><span>MySQL Databases</span> <span>2 / 5</span></div>
+                
+                <div class="stat-row"><span>Email Accounts</span> <span>1 / 10</span></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

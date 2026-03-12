@@ -1,47 +1,117 @@
-"""Developer Panel — Server Monitoring API"""
-from fastapi import APIRouter
-from typing import Optional
+"""Developer Panel — Server Monitoring API (DB-backed)."""
+from __future__ import annotations
+
 from datetime import datetime, timezone
-import random
+
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from .database import get_db, ManagedServer, ServerMetric
 
 router = APIRouter(prefix="/api/monitoring", tags=["Monitoring"])
 
 
 @router.get("/servers")
-async def list_monitored_servers():
+async def list_monitored_servers(db: AsyncSession = Depends(get_db)):
     """Get all monitored panel servers."""
-    return {
-        "servers": [
-            {"hostname": "panel-us-1.hostingsignal.com", "ip": "203.0.113.10", "status": "healthy", "cpu": random.randint(10, 40), "ram": random.randint(30, 60), "disk": random.randint(20, 50), "uptime": "42d 5h"},
-            {"hostname": "panel-eu-1.hostingsignal.com", "ip": "198.51.100.20", "status": "healthy", "cpu": random.randint(10, 40), "ram": random.randint(30, 60), "disk": random.randint(20, 50), "uptime": "18d 12h"},
-            {"hostname": "panel-ap-1.hostingsignal.com", "ip": "192.0.2.30", "status": "warning", "cpu": random.randint(60, 85), "ram": random.randint(70, 90), "disk": random.randint(40, 60), "uptime": "7d 3h"},
-        ]
-    }
+    result = await db.execute(select(ManagedServer).order_by(ManagedServer.created_at.desc()))
+    servers = result.scalars().all()
+
+    output = []
+    for server in servers:
+        metric_result = await db.execute(
+            select(ServerMetric)
+            .where(ServerMetric.server_id == server.id)
+            .order_by(ServerMetric.recorded_at.desc())
+            .limit(1)
+        )
+        metric = metric_result.scalar_one_or_none()
+        output.append(
+            {
+                "id": str(server.id),
+                "hostname": server.hostname,
+                "ip": server.ip_address,
+                "status": server.status,
+                "cpu": metric.cpu_percent if metric else None,
+                "ram": metric.ram_percent if metric else None,
+                "disk": metric.disk_percent if metric else None,
+                "uptime_seconds": metric.uptime_seconds if metric else None,
+                "last_heartbeat": server.last_heartbeat.isoformat() if server.last_heartbeat else None,
+            }
+        )
+
+    return {"servers": output}
 
 
 @router.get("/alerts")
-async def active_alerts():
-    """Get active alerts from monitored servers."""
-    return {
-        "alerts": [
-            {"severity": "warning", "server": "panel-ap-1", "message": "High CPU usage (78%)", "time": datetime.now(timezone.utc).isoformat()},
-            {"severity": "info", "server": "panel-us-1", "message": "SSL certificate expiring in 14 days", "time": datetime.now(timezone.utc).isoformat()},
-        ]
-    }
+async def active_alerts(db: AsyncSession = Depends(get_db)):
+    """Get active alerts from latest metric snapshots."""
+    result = await db.execute(select(ManagedServer))
+    servers = result.scalars().all()
+    alerts = []
+
+    for server in servers:
+        metric_result = await db.execute(
+            select(ServerMetric)
+            .where(ServerMetric.server_id == server.id)
+            .order_by(ServerMetric.recorded_at.desc())
+            .limit(1)
+        )
+        metric = metric_result.scalar_one_or_none()
+        if not metric:
+            continue
+
+        if metric.cpu_percent is not None and metric.cpu_percent >= 85:
+            alerts.append(
+                {
+                    "severity": "warning",
+                    "server": server.hostname,
+                    "message": f"High CPU usage ({metric.cpu_percent:.1f}%)",
+                    "time": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+
+        if metric.ram_percent is not None and metric.ram_percent >= 90:
+            alerts.append(
+                {
+                    "severity": "warning",
+                    "server": server.hostname,
+                    "message": f"High RAM usage ({metric.ram_percent:.1f}%)",
+                    "time": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+
+    return {"alerts": alerts}
 
 
 @router.get("/services/{hostname}")
-async def server_services(hostname: str):
-    """Get service statuses for a specific server."""
+async def server_services(hostname: str, db: AsyncSession = Depends(get_db)):
+    """Get service statuses for a specific server.
+
+    Remote per-service telemetry is not yet stored; this endpoint reports
+    server heartbeat state and returns placeholders for service status.
+    """
+    result = await db.execute(select(ManagedServer).where(ManagedServer.hostname == hostname))
+    server = result.scalar_one_or_none()
+    if not server:
+        return {"hostname": hostname, "services": {}, "message": "Server not found"}
+
+    state = "active" if server.status == "online" else "degraded"
     return {
         "hostname": hostname,
         "services": {
-            "hostingsignal-api": "active",
-            "hostingsignal-web": "active",
-            "hostingsignal-daemon": "active",
-            "hostingsignal-monitor": "active",
-            "lsws": "active",
-            "postgresql": "active",
-            "redis": "active",
+            "lsws": state,
+            "mariadb": state,
+            "postfix": state,
+            "dovecot": state,
+            "pdns": state,
+            "pure-ftpd": state,
+            "docker": state,
+            "csf": state,
+            "hostingsignal-api": state,
+            "hostingsignal-web": state,
+            "hostingsignal-daemon": state,
         },
+        "source": "cluster-heartbeat-derived",
     }

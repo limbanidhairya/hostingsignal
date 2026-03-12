@@ -1,15 +1,15 @@
 """Developer Panel Configuration"""
-from pydantic_settings import BaseSettings
 from functools import lru_cache
+import os
 
 
-class Settings(BaseSettings):
+class Settings:
     # Application
-    APP_NAME: str = "HostingSignal Developer Panel"
-    APP_VERSION: str = "1.0.0"
-    DEBUG: bool = False
-    HOST: str = "0.0.0.0"
-    PORT: int = 9000
+    APP_NAME: str = os.getenv("HSDEV_APP_NAME", "HostingSignal Developer Panel")
+    APP_VERSION: str = os.getenv("HSDEV_APP_VERSION", "1.0.0")
+    DEBUG: bool = os.getenv("HSDEV_DEBUG", "False").lower() == "true"
+    HOST: str = os.getenv("HSDEV_HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("HSDEV_PORT", "9000"))
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://hsdev:hsdev@localhost:5432/hostingsignal_dev"
@@ -44,9 +44,6 @@ class Settings(BaseSettings):
     # Monitoring
     MONITOR_INTERVAL: int = 15
 
-    class Config:
-        env_file = ".env"
-        env_prefix = "HSDEV_"
 
 
 @lru_cache()
