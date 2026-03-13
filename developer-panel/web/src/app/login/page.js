@@ -2,7 +2,34 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_BASE = process.env.NEXT_PUBLIC_HSDEV_API_BASE || "http://localhost:2087";
+const API_BASE = process.env.NEXT_PUBLIC_HSDEV_API_BASE || "/devapi";
+
+const resolveApiBases = () => {
+    const bases = [API_BASE];
+    if (typeof window !== "undefined") {
+        bases.push(`${window.location.protocol}//${window.location.hostname}:2087`);
+    }
+    return [...new Set(bases)];
+};
+
+const requestWithFallback = async (path, init = {}) => {
+    const bases = resolveApiBases();
+    let lastError = null;
+    for (const base of bases) {
+        try {
+            const res = await fetch(`${base}${path}`, init);
+            const shouldRetry = [404, 405, 502, 503, 504].includes(res.status);
+            if (shouldRetry) {
+                lastError = new Error(`HTTP ${res.status} from ${base}`);
+                continue;
+            }
+            return { res, base };
+        } catch (err) {
+            lastError = err;
+        }
+    }
+    throw lastError || new Error("API unavailable");
+};
 
 export default function LoginPage() {
     const router = useRouter();
@@ -13,9 +40,24 @@ export default function LoginPage() {
 
     useEffect(() => {
         const token = localStorage.getItem("hsdev_token");
-        if (token) {
-            router.replace("/");
-        }
+        if (!token) return;
+
+        const validateSession = async () => {
+            try {
+                const { res: meRes } = await requestWithFallback(`/api/auth/me`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (meRes.ok) {
+                    router.replace("/");
+                    return;
+                }
+                localStorage.removeItem("hsdev_token");
+            } catch {
+                // Keep token to allow retry when API is temporarily unavailable.
+            }
+        };
+
+        validateSession();
     }, [router]);
 
     const handleLogin = async (e) => {
@@ -24,7 +66,7 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const response = await fetch(`${API_BASE}/api/auth/login`, {
+            const { res: response, base } = await requestWithFallback(`/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
@@ -36,6 +78,13 @@ export default function LoginPage() {
             }
 
             localStorage.setItem("hsdev_token", payload.access_token);
+            const meRes = await fetch(`${base}/api/auth/me`, {
+                headers: { Authorization: `Bearer ${payload.access_token}` },
+            });
+            if (!meRes.ok) {
+                localStorage.removeItem("hsdev_token");
+                throw new Error("Session validation failed. Please try again.");
+            }
             router.replace("/");
         } catch (err) {
             setError(err.message || "Unable to authenticate");

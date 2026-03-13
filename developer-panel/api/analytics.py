@@ -1,6 +1,7 @@
 """Developer Panel — Analytics API (service-backed)."""
 from __future__ import annotations
 
+import asyncio
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
@@ -24,7 +25,7 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     total_licenses = 0
     active_licenses = 0
     try:
-        lic_stats = await license_sync.get_license_stats()
+        lic_stats = await asyncio.wait_for(license_sync.get_license_stats(), timeout=1.5)
         total_licenses = int(lic_stats.get("total", 0) or lic_stats.get("total_licenses", 0))
         active_licenses = int(lic_stats.get("active", 0) or lic_stats.get("active_licenses", 0))
     except Exception:

@@ -113,6 +113,22 @@ sub _dispatch_task {
     if ($action eq 'cleanup_tmp') {
         return _task_run_script('cleanup_tmp.sh', $args);
     }
+    if ($action eq 'whmcs_create_account') {
+        $args->{mode} = 'create';
+        return _task_run_script('whmcs_provision.sh', $args);
+    }
+    if ($action eq 'whmcs_suspend_account') {
+        $args->{mode} = 'suspend';
+        return _task_run_script('whmcs_provision.sh', $args);
+    }
+    if ($action eq 'whmcs_unsuspend_account') {
+        $args->{mode} = 'unsuspend';
+        return _task_run_script('whmcs_provision.sh', $args);
+    }
+    if ($action eq 'whmcs_terminate_account') {
+        $args->{mode} = 'terminate';
+        return _task_run_script('whmcs_provision.sh', $args);
+    }
 
     return {
         success => 0,

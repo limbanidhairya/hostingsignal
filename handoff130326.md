@@ -218,3 +218,140 @@ Native deployment was completed and verified inside `Ubuntu-24.04` WSL.
 - Sensitive credentials shared during setup are intentionally omitted/redacted from this handoff document.
 - This handoff is intended as a direct continuation point for implementation.
 - The current highest-confidence continuation point is the live WSL Ubuntu 24.04 deployment under `/usr/local/hspanel`.
+
+---
+
+## Addendum: Partner Portal + WHMCS Phase (Post Initial Handoff)
+
+### Scope Completed in This Addendum
+
+1. Developer/Partner auth flow moved to real backend JWT flow and validated against `/api/auth/me`.
+2. Dashboard navigation pages connected to backend APIs for stats/software/plugin catalog.
+3. Built-in plugin catalog added with plan-aware gating and admin override support:
+	- Open Source Vulnerability Scanner
+	- WordPress Manager
+	- Node App Manager
+	- React App Manager
+	- Python App Manager
+	- Docker Service Manager
+	- WHMCS Billing Integration Addon
+4. WHMCS integration implemented in three layers:
+	- API callbacks under `/api/whmcs/*`
+	- Queue-backed lifecycle execution via `hs-taskd.pl`
+	- WHMCS server/addon module scaffolds under `usr/local/hspanel/plugins/whmcs-addon/`
+5. Product-level WHMCS mapping persistence added (product ID -> plan/package/plugins/admin_override).
+6. Partner portal redirect loop hardening completed:
+	- Login validates token before redirect.
+	- Dashboard only logs out on real auth failure.
+	- API fallback supports same-origin proxy and direct host fallback.
+7. UI load responsiveness improved by:
+	- Non-blocking dashboard data boot after auth success.
+	- Analytics license lookup timeout.
+	- Software endpoint timeout reduction + short cache.
+
+### Key Files Updated in This Addendum
+
+- `developer-panel/web/src/app/login/page.js`
+- `developer-panel/web/src/app/page.js`
+- `developer-panel/web/next.config.js`
+- `developer-panel/api/plugins.py`
+- `developer-panel/api/whmcs.py`
+- `developer-panel/api/analytics.py`
+- `developer-panel/api/software.py`
+- `developer-panel/api/config.py`
+- `developer-panel/api/main.py`
+- `usr/local/hspanel/daemon/hs-taskd.pl`
+- `usr/local/hspanel/scripts/whmcs_provision.sh`
+- `usr/local/hspanel/plugins/whmcs-addon/modules/servers/hostingsignal_whmcs/hostingsignal_whmcs.php`
+- `usr/local/hspanel/plugins/whmcs-addon/modules/addons/hostingsignal_whmcs/hostingsignal_whmcs.php`
+- `usr/local/hspanel/plugins/whmcs-addon/README.txt`
+
+### Runtime Walkthrough (Operational)
+
+#### 1) Service Health (WSL)
+
+Verify all required services are active:
+
+- `systemctl status hostingsignal-devapi`
+- `systemctl status hostingsignal-web`
+- `systemctl status hostingsignal-taskd`
+
+Required outcomes:
+
+- Dev API listening on `2087`
+- Web app listening on `3000`
+- Task daemon watching `/var/hspanel/queue`
+
+#### 2) Partner Portal Login Path
+
+Open:
+
+- `http://localhost:3000/login`
+
+Flow:
+
+1. Login submits to `/devapi/api/auth/login` (or fallback host `:2087` if needed).
+2. Token is stored as `hsdev_token`.
+3. Session is immediately validated via `/api/auth/me`.
+4. On success, redirect to `/`.
+5. Dashboard loads non-critical data asynchronously to avoid auth-loop regressions.
+
+#### 3) WHMCS API Callback Path
+
+Endpoints (token protected via `X-HS-WHMCS-Token`):
+
+- `/api/whmcs/health`
+- `/api/whmcs/package/sync`
+- `/api/whmcs/provision/create-account`
+- `/api/whmcs/provision/suspend-account`
+- `/api/whmcs/provision/unsuspend-account`
+- `/api/whmcs/provision/terminate-account`
+- `/api/whmcs/product-mappings`
+- `/api/whmcs/product-mappings/upsert`
+- `/api/whmcs/product-mappings/resolve`
+- `/api/whmcs/product-mappings/delete`
+
+#### 4) Queue Execution Path for WHMCS Lifecycle
+
+1. `/api/whmcs/provision/*` writes job JSON files to `/var/hspanel/queue`.
+2. `hs-taskd.pl` picks jobs and dispatches to `whmcs_provision.sh`.
+3. Completed jobs move to `/var/hspanel/queue/done` with `.result.json` records.
+4. Service state is persisted at `/var/hspanel/userdata/whmcs_services/<service_id>.json`.
+
+#### 5) WHMCS Product Mapping Flow
+
+1. Upsert mapping with `product_id` + `plan` + `package_name` + plugin slugs.
+2. CreateAccount with `whmcs_product_id` auto-resolves mapping.
+3. If mapping exists, it overrides fallback payload values.
+4. If mapping absent, fallback payload is used.
+
+### Troubleshooting Walkthrough
+
+#### Partner Login Redirect Loop
+
+If user still loops to login:
+
+1. Hard refresh browser (`Ctrl+F5`).
+2. Check `/devapi/api/health` from browser host.
+3. Verify `/api/auth/login` and `/api/auth/me` via proxy on port `3000`.
+4. Confirm stale invalid token is removed from browser local storage (`hsdev_token`).
+
+#### Slow Dashboard Load
+
+1. Check latency for:
+	- `/devapi/api/analytics/stats`
+	- `/devapi/api/software/list`
+2. Confirm analytics timeout is active and API stays responsive when license server is slow.
+3. Confirm software endpoint cache is returning quickly on repeat requests.
+
+### Current Known Gaps (After Addendum)
+
+1. WHMCS module scaffold is functional but still minimal for production UX (no full WHMCS-side product wizard).
+2. No HMAC request signing yet; current callback protection is shared token only.
+3. No centralized audit UI yet for WHMCS mapping changes and lifecycle events.
+
+### Immediate Next Recommended Steps
+
+1. Add HMAC signing + replay protection to WHMCS callbacks.
+2. Add audit log persistence/reporting for provisioning and mapping events.
+3. Add partner dashboard page for WHMCS product mappings to avoid API/manual dependency.

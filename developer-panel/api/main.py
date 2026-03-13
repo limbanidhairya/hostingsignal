@@ -16,6 +16,7 @@ from api.analytics import router as analytics_router
 from api.monitoring import router as monitoring_router
 from api.software import router as software_router
 from api.auth import router as auth_router
+from api.whmcs import router as whmcs_router
 from api.database import init_db
 from api.config import get_settings
 
@@ -61,6 +62,7 @@ app.include_router(clusters_router)
 app.include_router(analytics_router)
 app.include_router(monitoring_router)
 app.include_router(software_router)
+app.include_router(whmcs_router)
 
 
 @app.get("/api/health")

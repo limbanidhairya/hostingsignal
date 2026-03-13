@@ -4,8 +4,15 @@ from pydantic import BaseModel
 from typing import List
 import subprocess
 import shutil
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/api/software", tags=["Software Manager"])
+
+_SOFTWARE_CACHE = {
+    "expires_at": datetime.min,
+    "light": [],
+    "detailed": [],
+}
 
 
 class SoftwareItem(BaseModel):
@@ -19,7 +26,7 @@ class SoftwareItem(BaseModel):
 
 def _detect_version(cmd: list) -> str:
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=1.5)
         return r.stdout.strip().split("\n")[0] if r.returncode == 0 else "unknown"
     except Exception:
         return "unknown"
@@ -29,7 +36,7 @@ def _service_active(unit: str) -> str:
     try:
         r = subprocess.run(
             ["systemctl", "is-active", unit],
-            capture_output=True, text=True, timeout=5
+            capture_output=True, text=True, timeout=1.0
         )
         return r.stdout.strip()
     except Exception:
@@ -153,8 +160,13 @@ CATALOG = [
 
 
 @router.get("/list", response_model=List[SoftwareItem])
-async def list_software():
+async def list_software(detailed: bool = False):
     """List all managed hosting stack software with live status."""
+    now = datetime.utcnow()
+    cache_key = "detailed" if detailed else "light"
+    if now < _SOFTWARE_CACHE["expires_at"] and _SOFTWARE_CACHE[cache_key]:
+        return _SOFTWARE_CACHE[cache_key]
+
     result = []
     for item in CATALOG:
         binary = item.get("binary")
@@ -163,8 +175,8 @@ async def list_software():
         unit = item.get("service_unit")
         status = _service_active(unit) if unit and installed else ("installed" if installed else "not_installed")
 
-        version = "n/a"
-        if installed and item.get("version_cmd"):
+        version = "n/a" if not detailed else "unknown"
+        if detailed and installed and item.get("version_cmd"):
             version = _detect_version(item["version_cmd"])
 
         result.append(SoftwareItem(
@@ -175,6 +187,9 @@ async def list_software():
             version=version,
             service_unit=unit or "-",
         ))
+
+    _SOFTWARE_CACHE["expires_at"] = now + timedelta(seconds=20)
+    _SOFTWARE_CACHE[cache_key] = result
     return result
 
 

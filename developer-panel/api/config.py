@@ -49,6 +49,10 @@ class Settings:
     # Monitoring
     MONITOR_INTERVAL: int = 15
 
+    # WHMCS Integration
+    WHMCS_SHARED_SECRET: str = os.getenv("HSDEV_WHMCS_SHARED_SECRET", "change-this-whmcs-secret")
+    WHMCS_ALLOWED_IPS: str = os.getenv("HSDEV_WHMCS_ALLOWED_IPS", "")
+
 
 
 @lru_cache()

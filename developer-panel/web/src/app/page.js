@@ -2,7 +2,44 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_BASE = process.env.NEXT_PUBLIC_HSDEV_API_BASE || 'http://localhost:2087';
+const API_BASE = process.env.NEXT_PUBLIC_HSDEV_API_BASE || '/devapi';
+
+const DEFAULT_STATS = {
+    totalServers: 0,
+    activeServers: 0,
+    totalLicenses: 0,
+    activeLicenses: 0,
+    totalPlugins: 0,
+    totalDownloads: 0,
+    recentActivity: [],
+};
+
+const resolveApiBases = () => {
+    const bases = [API_BASE];
+    if (typeof window !== 'undefined') {
+        bases.push(`${window.location.protocol}//${window.location.hostname}:2087`);
+    }
+    return [...new Set(bases)];
+};
+
+const requestWithFallback = async (path, init = {}) => {
+    const bases = resolveApiBases();
+    let lastError = null;
+    for (const base of bases) {
+        try {
+            const res = await fetch(`${base}${path}`, init);
+            const shouldRetry = [404, 405, 502, 503, 504].includes(res.status);
+            if (shouldRetry) {
+                lastError = new Error(`HTTP ${res.status} from ${base}`);
+                continue;
+            }
+            return { res, base };
+        } catch (err) {
+            lastError = err;
+        }
+    }
+    throw lastError || new Error('API unavailable');
+};
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: 'dashboard', id: 'dashboard' },
@@ -17,10 +54,12 @@ const NAV_ITEMS = [
 export default function DevPanelPage() {
     const router = useRouter();
     const [activePage, setActivePage] = useState('dashboard');
-    const [stats, setStats] = useState(null);
+    const [stats, setStats] = useState(DEFAULT_STATS);
     const [loading, setLoading] = useState(true);
     const [authReady, setAuthReady] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
+    const [software, setSoftware] = useState([]);
+    const [pluginCatalog, setPluginCatalog] = useState([]);
 
     useEffect(() => {
         const token = localStorage.getItem('hsdev_token');
@@ -31,7 +70,7 @@ export default function DevPanelPage() {
 
         const bootstrap = async () => {
             try {
-                const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+                const { res: meRes } = await requestWithFallback(`/api/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 if (!meRes.ok) {
@@ -40,24 +79,40 @@ export default function DevPanelPage() {
                 const me = await meRes.json();
                 setCurrentUser(me);
                 setAuthReady(true);
-
-                const statsRes = await fetch(`${API_BASE}/api/analytics/stats`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const data = statsRes.ok ? await statsRes.json() : null;
-                setStats(
-                    data || {
-                        totalServers: 0, activeServers: 0, totalLicenses: 0,
-                        activeLicenses: 0, totalPlugins: 0, totalDownloads: 0,
-                        recentActivity: []
-                    }
-                );
             } catch (err) {
                 console.error('Auth/bootstrap failed:', err);
                 localStorage.removeItem('hsdev_token');
                 router.replace('/login');
             } finally {
                 setLoading(false);
+            }
+
+            // Non-critical data loading should not block authenticated UI render.
+            const [statsResult, softwareResult, catalogResult] = await Promise.allSettled([
+                requestWithFallback(`/api/analytics/stats`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }).then(({ res }) => res),
+                requestWithFallback(`/api/software/list`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }).then(({ res }) => res),
+                requestWithFallback(`/api/plugins/catalog`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }).then(({ res }) => res),
+            ]);
+
+            if (statsResult.status === 'fulfilled' && statsResult.value.ok) {
+                const data = await statsResult.value.json();
+                setStats(data || DEFAULT_STATS);
+            }
+
+            if (softwareResult.status === 'fulfilled' && softwareResult.value.ok) {
+                const softwareData = await softwareResult.value.json();
+                setSoftware(Array.isArray(softwareData) ? softwareData : []);
+            }
+
+            if (catalogResult.status === 'fulfilled' && catalogResult.value.ok) {
+                const catalogData = await catalogResult.value.json();
+                setPluginCatalog(catalogData.plugins || []);
             }
         };
 
@@ -69,7 +124,7 @@ export default function DevPanelPage() {
         router.replace('/login');
     };
 
-    if (loading || !authReady || !stats) {
+    if (loading || !authReady) {
         return <div className="flex h-screen items-center justify-center bg-background-dark text-slate-100">Authenticating developer session...</div>;
     }
 
@@ -138,11 +193,11 @@ export default function DevPanelPage() {
                 <div className="flex-1 overflow-y-auto p-8">
                     {activePage === 'dashboard' && <DashboardView stats={stats} />}
                     {activePage === 'licenses' && <LicensesView />}
-                    {activePage === 'plugins' && <PluginsView />}
+                    {activePage === 'plugins' && <PluginsView plugins={pluginCatalog} />}
                     {activePage === 'clusters' && <ClustersView />}
                     {activePage === 'updates' && <UpdatesView />}
                     {activePage === 'analytics' && <AnalyticsView />}
-                    {activePage === 'monitoring' && <MonitoringView />}
+                    {activePage === 'monitoring' && <MonitoringView software={software} />}
                 </div>
             </main>
         </div>
@@ -168,11 +223,8 @@ function StatCard({ label, value, change, isUp, colorClass, iconClass }) {
 }
 
 function DashboardView({ stats }) {
-    const recentActivity = [
-        { text: 'New server registered: srv-eu-03', time: '2 min ago', type: 'info' },
-        { text: 'Plugin "backup-s3" updated', time: '15 min ago', type: 'success' },
-        { text: 'License activated: example.com', time: '32 min ago', type: 'success' },
-        { text: 'Server srv-us-07 reported high CPU (92%)', time: '2 hours ago', type: 'warning' },
+    const recentActivity = stats?.recentActivity?.length ? stats.recentActivity : [
+        { text: 'No recent events yet', time: 'just now', type: 'info' },
     ];
 
     return (
@@ -296,8 +348,145 @@ function LicensesView() {
     );
 }
 
-function PluginsView() {
-    return <div className="p-8 text-center text-slate-400">Plugins View (To be styled)</div>;
+function PluginsView({ plugins }) {
+    const [selectedPlan, setSelectedPlan] = useState('starter');
+    const [selectedPlugins, setSelectedPlugins] = useState([]);
+    const [adminOverride, setAdminOverride] = useState(false);
+    const [packagePreview, setPackagePreview] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    const togglePlugin = (slug) => {
+        setSelectedPlugins(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]);
+    };
+
+    const buildPackage = async () => {
+        setSubmitting(true);
+        try {
+            const token = localStorage.getItem('hsdev_token');
+            const res = await fetch(`${API_BASE}/api/plugins/packages/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    package_name: `custom-${selectedPlan}-package`,
+                    plan: selectedPlan,
+                    include_plugins: selectedPlugins,
+                    admin_override: adminOverride,
+                }),
+            });
+            const data = await res.json();
+            setPackagePreview(data.package || null);
+        } catch (err) {
+            console.error('Package preview failed', err);
+            setPackagePreview(null);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-end">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-100">Plugin Marketplace</h2>
+                    <p className="text-slate-400 mt-1">Built-in premium plugins with plan gating and admin override.</p>
+                </div>
+            </div>
+
+            <div className="glass rounded-xl overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-800/30 border-b border-border-dark text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        <tr>
+                            <th className="px-6 py-4">Plugin</th>
+                            <th className="px-6 py-4">Category</th>
+                            <th className="px-6 py-4">Required Plan</th>
+                            <th className="px-6 py-4">Select</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-dark/50 text-sm">
+                        {(plugins || []).map((p) => (
+                            <tr key={p.slug} className="hover:bg-slate-800/20 transition-colors">
+                                <td className="px-6 py-4">
+                                    <div className="font-semibold text-slate-100">{p.name}</div>
+                                    <div className="text-xs text-slate-400 mt-1">{p.description}</div>
+                                </td>
+                                <td className="px-6 py-4 text-slate-300 uppercase text-xs">{p.category}</td>
+                                <td className="px-6 py-4"><span className="px-2 py-1 rounded bg-primary/10 text-primary text-xs font-bold border border-primary/20">{p.required_plan}</span></td>
+                                <td className="px-6 py-4">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedPlugins.includes(p.slug)}
+                                        onChange={() => togglePlugin(p.slug)}
+                                        className="w-4 h-4"
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div className="glass rounded-xl p-6 space-y-4">
+                <h3 className="text-lg font-semibold text-slate-100">Package Builder</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <label className="text-xs uppercase text-slate-400 tracking-wider">Plan</label>
+                        <select
+                            value={selectedPlan}
+                            onChange={(e) => setSelectedPlan(e.target.value)}
+                            className="w-full mt-2 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-slate-200"
+                        >
+                            <option value="starter">starter</option>
+                            <option value="professional">professional</option>
+                            <option value="business">business</option>
+                            <option value="enterprise">enterprise</option>
+                        </select>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-slate-300 text-sm">
+                        <input
+                            type="checkbox"
+                            checked={adminOverride}
+                            onChange={(e) => setAdminOverride(e.target.checked)}
+                            className="w-4 h-4"
+                        />
+                        Allow admin override for lower plan
+                    </label>
+
+                    <button
+                        onClick={buildPackage}
+                        disabled={submitting}
+                        className="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    >
+                        {submitting ? 'Evaluating...' : 'Evaluate Package'}
+                    </button>
+                </div>
+
+                {packagePreview && (
+                    <div className="mt-4 rounded-lg border border-border-dark p-4 bg-slate-900/40">
+                        <p className="text-slate-100 font-semibold">Enabled Plugins: {packagePreview.enabled_plugins.length}</p>
+                        <ul className="mt-2 space-y-1 text-sm text-slate-300">
+                            {packagePreview.enabled_plugins.map((p) => (
+                                <li key={p.slug}>• {p.name} {p.override_used ? '(override)' : ''}</li>
+                            ))}
+                        </ul>
+                        {packagePreview.blocked_plugins.length > 0 && (
+                            <div className="mt-3">
+                                <p className="text-red-400 text-sm font-semibold">Blocked Plugins</p>
+                                <ul className="mt-1 space-y-1 text-sm text-slate-300">
+                                    {packagePreview.blocked_plugins.map((p) => (
+                                        <li key={p.slug}>• {p.name} - {p.reason}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
 function ClustersView() {
     return <div className="p-8 text-center text-slate-400">Clusters View (To be styled)</div>;
@@ -308,6 +497,27 @@ function UpdatesView() {
 function AnalyticsView() {
     return <div className="p-8 text-center text-slate-400">Analytics View (To be styled)</div>;
 }
-function MonitoringView() {
-    return <div className="p-8 text-center text-slate-400">Monitoring View (To be styled)</div>;
+function MonitoringView({ software }) {
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+                <h2 className="text-2xl font-bold text-slate-100">Service Link Monitor</h2>
+                <p className="text-slate-400 mt-1">Live status for software/services linked to dashboard actions.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {(software || []).map((s) => (
+                    <div key={s.id} className="glass rounded-xl p-4 border border-border-dark/60">
+                        <p className="text-slate-100 font-semibold">{s.name}</p>
+                        <p className="text-xs text-slate-400 uppercase mt-1">{s.category}</p>
+                        <div className="mt-3 flex items-center justify-between">
+                            <span className="text-xs text-slate-400">service: {s.service_unit}</span>
+                            <span className={`px-2 py-1 rounded text-xs font-bold border ${s.status === 'active' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                                {s.status}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 }
