@@ -3,7 +3,7 @@ import httpx
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
-from ..api.config import get_settings
+from api.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

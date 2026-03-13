@@ -1,14 +1,20 @@
 """Developer Panel Database Models & Connection"""
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SAEnum
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SAEnum, Uuid, select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base, relationship
 from .config import get_settings
 
 settings = get_settings()
-engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG, pool_size=20, max_overflow=10)
+if settings.DATABASE_URL.startswith("sqlite"):
+    engine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DEBUG,
+        connect_args={"check_same_thread": False},
+    )
+else:
+    engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG, pool_size=20, max_overflow=10)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
@@ -25,7 +31,7 @@ async def get_db():
 
 class DevAdmin(Base):
     __tablename__ = "dev_admins"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = Column(String(100), unique=True, nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
@@ -37,7 +43,7 @@ class DevAdmin(Base):
 
 class ManagedServer(Base):
     __tablename__ = "managed_servers"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     hostname = Column(String(255), nullable=False)
     ip_address = Column(String(45), nullable=False)
     port = Column(Integer, default=8000)
@@ -47,7 +53,7 @@ class ManagedServer(Base):
     cpu_cores = Column(Integer, nullable=True)
     ram_mb = Column(Integer, nullable=True)
     disk_gb = Column(Integer, nullable=True)
-    cluster_id = Column(UUID(as_uuid=True), ForeignKey("clusters.id"), nullable=True)
+    cluster_id = Column(Uuid(as_uuid=True), ForeignKey("clusters.id"), nullable=True)
     last_heartbeat = Column(DateTime, nullable=True)
     license_key = Column(String(100), nullable=True)
     metadata_ = Column("metadata", JSON, default=dict)
@@ -59,7 +65,7 @@ class ManagedServer(Base):
 
 class Cluster(Base):
     __tablename__ = "clusters"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), unique=True, nullable=False)
     description = Column(Text, nullable=True)
     region = Column(String(50), nullable=True)
@@ -73,7 +79,7 @@ class Cluster(Base):
 
 class PluginSubmission(Base):
     __tablename__ = "plugin_submissions"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(100), nullable=False)
     slug = Column(String(100), unique=True, nullable=False)
     version = Column(String(20), nullable=False)
@@ -97,7 +103,7 @@ class PluginSubmission(Base):
 
 class PanelUpdate(Base):
     __tablename__ = "panel_updates"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     version = Column(String(20), unique=True, nullable=False)
     channel = Column(String(20), default="stable")  # stable, beta, nightly
     changelog = Column(Text, nullable=True)
@@ -113,8 +119,8 @@ class PanelUpdate(Base):
 
 class ServerMetric(Base):
     __tablename__ = "server_metrics"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    server_id = Column(UUID(as_uuid=True), ForeignKey("managed_servers.id"), nullable=False)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    server_id = Column(Uuid(as_uuid=True), ForeignKey("managed_servers.id"), nullable=False)
     cpu_percent = Column(Float, nullable=True)
     ram_percent = Column(Float, nullable=True)
     disk_percent = Column(Float, nullable=True)
@@ -129,9 +135,9 @@ class ServerMetric(Base):
 
 class AnalyticsEvent(Base):
     __tablename__ = "analytics_events"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     event_type = Column(String(50), nullable=False)  # install, activate, deactivate, update, error
-    server_id = Column(UUID(as_uuid=True), nullable=True)
+    server_id = Column(Uuid(as_uuid=True), nullable=True)
     license_key = Column(String(100), nullable=True)
     panel_version = Column(String(20), nullable=True)
     os_info = Column(String(100), nullable=True)
@@ -143,8 +149,8 @@ class AnalyticsEvent(Base):
 
 class AuditLog(Base):
     __tablename__ = "dev_audit_logs"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    admin_id = Column(UUID(as_uuid=True), nullable=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    admin_id = Column(Uuid(as_uuid=True), nullable=True)
     action = Column(String(100), nullable=False)
     resource_type = Column(String(50), nullable=True)
     resource_id = Column(String(100), nullable=True)
@@ -156,3 +162,52 @@ class AuditLog(Base):
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Ensure a deterministic default admin account for local/dev bootstrap.
+    async with async_session() as session:
+        from .auth import pwd_context
+
+        admin_result = await session.execute(
+            select(DevAdmin).where(DevAdmin.email == settings.DEFAULT_ADMIN_EMAIL).limit(1)
+        )
+        admin = admin_result.scalar_one_or_none()
+
+        if admin is None:
+            username_result = await session.execute(
+                select(DevAdmin).where(DevAdmin.username == settings.DEFAULT_ADMIN_USERNAME).limit(1)
+            )
+            admin = username_result.scalar_one_or_none()
+
+        if admin is None:
+            admin = DevAdmin(
+                username=settings.DEFAULT_ADMIN_USERNAME,
+                email=settings.DEFAULT_ADMIN_EMAIL,
+                password_hash=pwd_context.hash(settings.DEFAULT_ADMIN_PASSWORD),
+                role="admin",
+                is_active=True,
+            )
+            session.add(admin)
+            await session.commit()
+            return
+
+        changed = False
+        if admin.email != settings.DEFAULT_ADMIN_EMAIL:
+            admin.email = settings.DEFAULT_ADMIN_EMAIL
+            changed = True
+        if admin.username != settings.DEFAULT_ADMIN_USERNAME:
+            admin.username = settings.DEFAULT_ADMIN_USERNAME
+            changed = True
+        if not admin.is_active:
+            admin.is_active = True
+            changed = True
+        if not pwd_context.verify(settings.DEFAULT_ADMIN_PASSWORD, admin.password_hash):
+            admin.password_hash = pwd_context.hash(settings.DEFAULT_ADMIN_PASSWORD)
+            changed = True
+
+        if changed:
+            await session.commit()
+
+
+async def _first_admin_id(session: AsyncSession):
+    result = await session.execute(DevAdmin.__table__.select().with_only_columns(DevAdmin.id).limit(1))
+    return result.scalar_one_or_none()

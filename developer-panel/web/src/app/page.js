@@ -1,5 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+const API_BASE = process.env.NEXT_PUBLIC_HSDEV_API_BASE || 'http://localhost:2087';
 
 const NAV_ITEMS = [
     { label: 'Dashboard', icon: 'dashboard', id: 'dashboard' },
@@ -12,31 +15,62 @@ const NAV_ITEMS = [
 ];
 
 export default function DevPanelPage() {
+    const router = useRouter();
     const [activePage, setActivePage] = useState('dashboard');
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [authReady, setAuthReady] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
-        fetch('http://localhost:2087/api/analytics/stats')
-            .then(res => res.json())
-            .then(data => {
-                setStats(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error('Error fetching stats:', err);
-                setLoading(false);
-                // Fallback data if API is unreachable
-                setStats({
-                    totalServers: 0, activeServers: 0, totalLicenses: 0,
-                    activeLicenses: 0, totalPlugins: 0, totalDownloads: 0,
-                    recentActivity: []
-                });
-            });
-    }, []);
+        const token = localStorage.getItem('hsdev_token');
+        if (!token) {
+            router.replace('/login');
+            return;
+        }
 
-    if (loading || !stats) {
-        return <div className="flex h-screen items-center justify-center bg-background-dark text-slate-100">Connecting to HS-Panel Core (Port 2087)...</div>;
+        const bootstrap = async () => {
+            try {
+                const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!meRes.ok) {
+                    throw new Error('Session expired');
+                }
+                const me = await meRes.json();
+                setCurrentUser(me);
+                setAuthReady(true);
+
+                const statsRes = await fetch(`${API_BASE}/api/analytics/stats`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = statsRes.ok ? await statsRes.json() : null;
+                setStats(
+                    data || {
+                        totalServers: 0, activeServers: 0, totalLicenses: 0,
+                        activeLicenses: 0, totalPlugins: 0, totalDownloads: 0,
+                        recentActivity: []
+                    }
+                );
+            } catch (err) {
+                console.error('Auth/bootstrap failed:', err);
+                localStorage.removeItem('hsdev_token');
+                router.replace('/login');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        bootstrap();
+    }, [router]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('hsdev_token');
+        router.replace('/login');
+    };
+
+    if (loading || !authReady || !stats) {
+        return <div className="flex h-screen items-center justify-center bg-background-dark text-slate-100">Authenticating developer session...</div>;
     }
 
     return (
@@ -67,13 +101,19 @@ export default function DevPanelPage() {
                 <div className="p-4 border-t border-border-dark">
                     <div className="flex items-center gap-3 px-2">
                         <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold border-2 border-primary/30">
-                            A
+                            {(currentUser?.username || 'A').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                            <p className="text-sm font-semibold text-slate-100">Super Admin</p>
-                            <p className="text-xs text-slate-500">Enterprise Edition</p>
+                            <p className="text-sm font-semibold text-slate-100">{currentUser?.username || 'Developer'}</p>
+                            <p className="text-xs text-slate-500">{currentUser?.role || 'admin'}</p>
                         </div>
                     </div>
+                    <button
+                        onClick={handleLogout}
+                        className="mt-3 w-full px-3 py-2 text-xs font-semibold rounded border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                    >
+                        Logout
+                    </button>
                 </div>
             </aside>
 

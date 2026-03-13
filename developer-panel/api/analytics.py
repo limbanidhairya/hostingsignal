@@ -8,8 +8,8 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db, PluginSubmission
-from ..services.analytics_engine import analytics_engine
-from ..services.license_sync import license_sync
+from services.analytics_engine import analytics_engine
+from services.license_sync import license_sync
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 

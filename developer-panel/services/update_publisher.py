@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Optional
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..api.database import PanelUpdate, ManagedServer
-from ..api.config import get_settings
+from api.database import PanelUpdate, ManagedServer
+from api.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

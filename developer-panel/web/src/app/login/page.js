@@ -1,13 +1,47 @@
 'use client';
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+const API_BASE = process.env.NEXT_PUBLIC_HSDEV_API_BASE || "http://localhost:2087";
 
 export default function LoginPage() {
     const router = useRouter();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleLogin = (e) => {
+    useEffect(() => {
+        const token = localStorage.getItem("hsdev_token");
+        if (token) {
+            router.replace("/");
+        }
+    }, [router]);
+
+    const handleLogin = async (e) => {
         e.preventDefault();
-        router.push("/");
+        setSubmitting(true);
+        setError("");
+
+        try {
+            const response = await fetch(`${API_BASE}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const payload = await response.json();
+            if (!response.ok || !payload.access_token) {
+                throw new Error(payload.detail || "Login failed");
+            }
+
+            localStorage.setItem("hsdev_token", payload.access_token);
+            router.replace("/");
+        } catch (err) {
+            setError(err.message || "Unable to authenticate");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -54,6 +88,8 @@ export default function LoginPage() {
                                     className="w-full bg-[#0a1628]/50 border border-slate-700 focus:border-[#00d9ff] focus:ring-1 focus:ring-[#00d9ff] rounded-lg py-4 pl-12 pr-4 text-white placeholder:text-slate-600 transition-all outline-none"
                                     placeholder="partner@hs-panel.com"
                                     type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -70,6 +106,8 @@ export default function LoginPage() {
                                     className="w-full bg-[#0a1628]/50 border border-slate-700 focus:border-[#00d9ff] focus:ring-1 focus:ring-[#00d9ff] rounded-lg py-4 pl-12 pr-12 text-white placeholder:text-slate-600 transition-all outline-none"
                                     placeholder="••••••••"
                                     type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                 />
                                 <button className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-[#00d9ff] transition-colors" type="button">
                                     <span className="material-symbols-outlined text-xl">visibility</span>
@@ -87,10 +125,11 @@ export default function LoginPage() {
                         </div>
 
                         {/* Submit Button */}
-                        <button className="w-full bg-gradient-to-r from-[#00d9ff] to-blue-600 hover:from-[#00d9ff]/90 hover:to-blue-600/90 text-[#0a1628] font-bold py-4 rounded-lg shadow-lg shadow-[#00d9ff]/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]" type="submit">
-                            <span>Login to Partner Portal</span>
+                        <button disabled={submitting} className="w-full bg-gradient-to-r from-[#00d9ff] to-blue-600 hover:from-[#00d9ff]/90 hover:to-blue-600/90 disabled:opacity-60 disabled:cursor-not-allowed text-[#0a1628] font-bold py-4 rounded-lg shadow-lg shadow-[#00d9ff]/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]" type="submit">
+                            <span>{submitting ? 'Authenticating...' : 'Login to Partner Portal'}</span>
                             <span className="material-symbols-outlined">arrow_forward</span>
                         </button>
+                        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
                     </form>
                 </div>
 

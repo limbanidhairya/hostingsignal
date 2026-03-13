@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from ..services.license_sync import license_sync
+from services.license_sync import license_sync
 
 router = APIRouter(prefix="/api/licenses", tags=["Licenses"])
 

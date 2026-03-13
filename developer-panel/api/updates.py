@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db
-from ..services.update_publisher import update_publisher
+from services.update_publisher import update_publisher
 
 router = APIRouter(prefix="/api/updates", tags=["Updates"])
 

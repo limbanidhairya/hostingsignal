@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..api.database import AnalyticsEvent, ManagedServer, ServerMetric
-from ..api.config import get_settings
+from api.database import AnalyticsEvent, ManagedServer, ServerMetric
+from api.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

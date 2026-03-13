@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from ..api.database import Cluster, ManagedServer, ServerMetric
-from ..api.config import get_settings
+from api.database import Cluster, ManagedServer, ServerMetric
+from api.config import get_settings
 
 logger = logging.getLogger(__name__)
 settings = get_settings()

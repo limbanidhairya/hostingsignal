@@ -12,7 +12,12 @@ class Settings:
     PORT: int = int(os.getenv("HSDEV_PORT", "9000"))
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://hsdev:hsdev@localhost:5432/hostingsignal_dev"
+    DATABASE_URL: str = os.getenv("HSDEV_DATABASE_URL", "sqlite+aiosqlite:///./hostingsignal_dev.db")
+
+    # Seeded admin (development bootstrap)
+    DEFAULT_ADMIN_EMAIL: str = os.getenv("HSDEV_DEFAULT_ADMIN_EMAIL", "admin@hostingsignal.local")
+    DEFAULT_ADMIN_USERNAME: str = os.getenv("HSDEV_DEFAULT_ADMIN_USERNAME", "admin")
+    DEFAULT_ADMIN_PASSWORD: str = os.getenv("HSDEV_DEFAULT_ADMIN_PASSWORD", "Admin@123")
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/2"

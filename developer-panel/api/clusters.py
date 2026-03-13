@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db, ManagedServer
-from ..services.cluster_manager import cluster_manager
+from services.cluster_manager import cluster_manager
 
 router = APIRouter(prefix="/api/clusters", tags=["Cluster Control"])
 

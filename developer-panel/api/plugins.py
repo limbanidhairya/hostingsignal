@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .database import get_db
-from ..services.plugin_registry import plugin_registry
+from services.plugin_registry import plugin_registry
 
 router = APIRouter(prefix="/api/plugins", tags=["Plugin Marketplace"])
 
