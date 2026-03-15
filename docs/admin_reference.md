@@ -17,7 +17,7 @@ permalink: /admin_reference/
 
 # HostingSignal Admin Reference
 
-This page is intended to be the future GitHub Pages admin-facing reference for installs, release status, service ports, and documentation entrypoints.
+This page is the admin-facing reference for installs, release status, service ports, and documentation entrypoints.
 
 ## Primary Admin URLs
 
@@ -39,6 +39,10 @@ Core-only fallback:
 ```bash
 bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
+
+Detailed install runbook:
+
+- [Universal Install Guide]({{ '/install/' | relative_url }})
 
 Prerequisites:
 

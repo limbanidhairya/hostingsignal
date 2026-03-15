@@ -10,7 +10,8 @@ permalink: /
 		<h1>Operational docs, release notes, and admin reference in one place.</h1>
 		<p class="lead">Use this site as the central reference for platform architecture, install flows, release readiness, and runtime operations.</p>
 		<div class="hero__actions">
-			<a class="button button--primary" href="{{ '/admin_reference/' | relative_url }}">Open Admin Reference</a>
+			<a class="button button--primary" href="{{ '/install/' | relative_url }}">Start Install Guide</a>
+			<a class="button button--ghost" href="{{ '/admin_reference/' | relative_url }}">Open Admin Reference</a>
 			<a class="button button--ghost" href="{{ '/release_scope_2026-03-15/' | relative_url }}">View Release Scope</a>
 		</div>
 	</div>
@@ -24,6 +25,10 @@ Welcome to the HostingSignal documentation hub.
 ## Quick Links
 
 <div class="card-grid">
+	<a class="card" href="{{ '/install/' | relative_url }}">
+		<strong>Install Guide</strong>
+		<span>Universal one-command install plus core-only and OS-specific paths.</span>
+	</a>
 	<a class="card" href="{{ '/admin_reference/' | relative_url }}">
 		<strong>Admin Reference</strong>
 		<span>Install commands, ports, domain notes, and operational checks.</span>
@@ -85,6 +90,10 @@ Core-only fallback:
 bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
+Full install runbook page:
+
+- [Universal Install Guide]({{ '/install/' | relative_url }})
+
 Supported paths:
 
 - Ubuntu 22.04 / 24.04
@@ -95,12 +104,12 @@ Supported paths:
 
 ## GitHub Pages Status
 
-GitHub Pages deployment workflow is configured.
+GitHub Pages docs are live.
 
+- Live docs domain: `https://docs.hostingsignal.in/`
 - Workflow file: `.github/workflows/docs-pages.yml`
 - Source directory: `docs/`
-- Custom domain: `https://docs.hostingsignal.in/`
 
-Custom domain is now configured in-repo. Finish by confirming the domain in GitHub Pages settings and enabling HTTPS after validation.
+If content looks stale, hard refresh and check the latest `Docs Pages` run in GitHub Actions.
 
 
