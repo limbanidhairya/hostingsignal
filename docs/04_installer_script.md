@@ -1,3 +1,8 @@
+---
+title: Installer Script
+permalink: /04_installer_script/
+---
+
 # STEP 13 — UNIVERSAL INSTALLER SCRIPT
 
 ```bash

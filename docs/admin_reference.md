@@ -1,6 +1,19 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/developer-panel/web/public/branding/hostingsignal-logo.png" alt="HostingSignal Logo" width="170" />
-</p>
+---
+title: Admin Reference
+description: Operational reference for install, platform ports, Pages domain, and release tracking.
+permalink: /admin_reference/
+---
+
+<section class="hero hero--compact">
+  <div class="hero__copy">
+    <span class="eyebrow">Admin Reference</span>
+    <h1>Runtime, install, and release controls for HostingSignal administrators.</h1>
+    <p class="lead">This page collects the commands and references you are most likely to need when operating the current HostingSignal release.</p>
+  </div>
+  <div class="hero__brand">
+    <img src="https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/developer-panel/web/public/branding/hostingsignal-logo.png" alt="HostingSignal Logo" width="160" />
+  </div>
+</section>
 
 # HostingSignal Admin Reference
 

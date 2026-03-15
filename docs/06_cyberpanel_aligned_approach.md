@@ -1,3 +1,8 @@
+---
+title: CyberPanel Aligned Approach
+permalink: /06_cyberpanel_aligned_approach/
+---
+
 # 06 - CyberPanel-Aligned Build Approach
 
 ## Why the old approach failed

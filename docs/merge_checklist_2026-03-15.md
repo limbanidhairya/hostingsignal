@@ -1,3 +1,8 @@
+---
+title: Merge Checklist 2026-03-15
+permalink: /merge_checklist_2026-03-15/
+---
+
 # Merge Checklist - 2026-03-15
 
 This checklist enforces a strict merge order with pass/fail gates for each branch.

@@ -1,3 +1,8 @@
+---
+title: Release Scope 2026-03-15
+permalink: /release_scope_2026-03-15/
+---
+
 # Release Scope Review - 2026-03-15
 
 This file classifies the current working tree into release-ready changes versus changes that should be intentionally reviewed before being included in a GitHub release.

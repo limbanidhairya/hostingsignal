@@ -1,3 +1,8 @@
+---
+title: Queue Security Plugins Microservices
+permalink: /05_queue_security_plugins_microservices/
+---
+
 # STEP 14 — TASK QUEUE SYSTEM
 
 ## Architecture

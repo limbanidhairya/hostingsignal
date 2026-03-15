@@ -1,3 +1,8 @@
+---
+title: HS Panel Architecture
+permalink: /hspanel_architecture/
+---
+
 # HS-Panel Architecture Blueprint
 
 This document details the architectural design for **HS-Panel**, a traditional, production-grade Linux hosting control panel built using a resilient stack of Perl, C/C++, and Bash, alongside a modern HTML/CSS/JavaScript frontend. It avoids proprietary implementations of existing panels while delivering a robust, automated hosting ecosystem.

@@ -1,3 +1,8 @@
+---
+title: Architecture and Subsystems
+permalink: /02_architecture_and_subsystems/
+---
+
 # STEP 4 — FULL HS-PANEL ARCHITECTURE
 
 ## Architecture Layers

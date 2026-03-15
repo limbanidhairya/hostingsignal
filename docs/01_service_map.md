@@ -1,3 +1,8 @@
+---
+title: Service Map
+permalink: /01_service_map/
+---
+
 # STEP 1 — HS-PANEL INTERNAL SERVICE MAP
 
 ## Master Architecture Overview

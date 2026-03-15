@@ -1,17 +1,46 @@
-<p align="center">
-	<img src="https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/developer-panel/web/public/branding/hostingsignal-logo.png" alt="HostingSignal Logo" width="170" />
-</p>
+---
+title: HostingSignal Docs
+description: Architecture, operations, installation, and release documentation.
+permalink: /
+---
 
-# HostingSignal Documentation
+<section class="hero">
+	<div class="hero__copy">
+		<span class="eyebrow">HostingSignal Documentation</span>
+		<h1>Operational docs, release notes, and admin reference in one place.</h1>
+		<p class="lead">Use this site as the central reference for platform architecture, install flows, release readiness, and runtime operations.</p>
+		<div class="hero__actions">
+			<a class="button button--primary" href="{{ '/admin_reference/' | relative_url }}">Open Admin Reference</a>
+			<a class="button button--ghost" href="{{ '/release_scope_2026-03-15/' | relative_url }}">View Release Scope</a>
+		</div>
+	</div>
+	<div class="hero__brand">
+		<img src="https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/developer-panel/web/public/branding/hostingsignal-logo.png" alt="HostingSignal Logo" width="180" />
+	</div>
+</section>
 
 Welcome to the HostingSignal documentation hub.
 
 ## Quick Links
 
-- Live docs domain: `https://docs.hostingsignal.in/`
-- Admin reference: [admin_reference.md](admin_reference.md)
-- Release scope: [release_scope_2026-03-15.md](release_scope_2026-03-15.md)
-- Merge checklist: [merge_checklist_2026-03-15.md](merge_checklist_2026-03-15.md)
+<div class="card-grid">
+	<a class="card" href="{{ '/admin_reference/' | relative_url }}">
+		<strong>Admin Reference</strong>
+		<span>Install commands, ports, domain notes, and operational checks.</span>
+	</a>
+	<a class="card" href="{{ '/release_scope_2026-03-15/' | relative_url }}">
+		<strong>Release Scope</strong>
+		<span>Current release snapshot, branch scope, and merge boundaries.</span>
+	</a>
+	<a class="card" href="{{ '/merge_checklist_2026-03-15/' | relative_url }}">
+		<strong>Merge Checklist</strong>
+		<span>What to verify before promoting release work.</span>
+	</a>
+	<a class="card" href="{{ '/local_services_installer/' | relative_url }}">
+		<strong>Installer Guide</strong>
+		<span>Local sandbox install flow and supported execution paths.</span>
+	</a>
+</div>
 
 ## What This Site Covers
 
@@ -22,21 +51,25 @@ Welcome to the HostingSignal documentation hub.
 
 ## Start Here
 
-- [Service Map](01_service_map.md)
-- [Architecture and Subsystems](02_architecture_and_subsystems.md)
-- [Webserver Automation Installer](03_webserver_automation_installer.md)
-- [Installer Script](04_installer_script.md)
-- [Queue Security Plugins Microservices](05_queue_security_plugins_microservices.md)
-- [CyberPanel Aligned Approach](06_cyberpanel_aligned_approach.md)
-- [HS Panel Architecture](hspanel_architecture.md)
+<div class="doc-list">
+	<a href="{{ '/01_service_map/' | relative_url }}">Service Map</a>
+	<a href="{{ '/02_architecture_and_subsystems/' | relative_url }}">Architecture and Subsystems</a>
+	<a href="{{ '/03_webserver_automation_installer/' | relative_url }}">Webserver Automation Installer</a>
+	<a href="{{ '/04_installer_script/' | relative_url }}">Installer Script</a>
+	<a href="{{ '/05_queue_security_plugins_microservices/' | relative_url }}">Queue Security Plugins Microservices</a>
+	<a href="{{ '/06_cyberpanel_aligned_approach/' | relative_url }}">CyberPanel Aligned Approach</a>
+	<a href="{{ '/hspanel_architecture/' | relative_url }}">HS Panel Architecture</a>
+</div>
 
 ## Release Notes and Operations
 
-- [Admin Reference](admin_reference.md)
-- [Release Scope - 2026-03-15](release_scope_2026-03-15.md)
-- [Merge Checklist - 2026-03-15](merge_checklist_2026-03-15.md)
-- [Build Status - 2026-03-15](build_status_iteration_2026-03-15.md)
-- [Handoff - 2026-03-15](handoff_2026-03-15.md)
+<div class="doc-list">
+	<a href="{{ '/admin_reference/' | relative_url }}">Admin Reference</a>
+	<a href="{{ '/release_scope_2026-03-15/' | relative_url }}">Release Scope - 2026-03-15</a>
+	<a href="{{ '/merge_checklist_2026-03-15/' | relative_url }}">Merge Checklist - 2026-03-15</a>
+	<a href="{{ '/build_status_iteration_2026-03-15/' | relative_url }}">Build Status - 2026-03-15</a>
+	<a href="{{ '/handoff_2026-03-15/' | relative_url }}">Handoff - 2026-03-15</a>
+</div>
 
 ## Install Quick Start
 

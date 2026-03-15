@@ -1,3 +1,8 @@
+---
+title: Local Services Installer
+permalink: /local_services_installer/
+---
+
 # Local Services Installer
 
 This installer replaces the previous `/usr/local`-centric flow with a repository-local sandbox.

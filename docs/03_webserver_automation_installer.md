@@ -1,3 +1,8 @@
+---
+title: Webserver Automation Installer
+permalink: /03_webserver_automation_installer/
+---
+
 # STEP 9 — WEB SERVER MANAGEMENT
 
 ## Multi-Engine Support
