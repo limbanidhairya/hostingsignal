@@ -57,11 +57,20 @@ Hostingsignal/
 
 ## 🔐 Authentication Notes
 
-- Portal token key in browser: `hsdev_token`
-- Login flow validates token with `/api/auth/me` before dashboard redirect
-- API fallback strategy:
-  - Primary: `/devapi` (same-origin rewrite)
-  - Fallback: `http://<current-host>:2087`
+- Server session cookie key: `hsdev_session` (HTTP-only)
+- Login/session endpoints:
+  - `POST /api/session/login`
+  - `GET /api/session/me`
+  - `POST /api/session/logout`
+  - `GET /api/session/token`
+- Middleware route guard enforces session before `/` dashboard access.
+- Legacy local token key `hsdev_token` is still mirrored for API authorization headers.
+
+## 🎨 Branding Notes
+
+- Primary logo asset: `developer-panel/web/public/branding/hostingsignal-logo.png`
+- Runtime logo path: `/branding/hostingsignal-logo.png`
+- Current UI palette is aligned to brand blues in `developer-panel/web/src/app/layout.js` and `developer-panel/web/src/app/globals.css`.
 
 ## 🧩 Built-in Plugin Catalog
 
@@ -150,7 +159,47 @@ sudo systemctl restart hostingsignal-web
 
 # Restart API
 sudo systemctl restart hostingsignal-devapi
+
+# Container runtime quick checks
+hsctl container status
+hsctl container list
+
+# DNS replication checks
+hsctl dns verify --zone example.com
+
+# Deploy current iteration to WSL target and run verification
+sudo bash scripts/deploy_iteration_wsl.sh
+
+# Fix Docker socket permissions in WSL for container runner
+sudo bash scripts/fix_container_runtime_permissions_wsl.sh
+
+# Show current dev API test credentials and verify login
+sudo bash scripts/get_test_credentials_wsl.sh --verify
 ```
+
+## 🚀 Launch Hardening (2-Day Checklist)
+
+Generate a hardened HSDEV env file:
+
+```bash
+cd /usr/local/hspanel
+bash scripts/generate_production_env.sh
+```
+
+Then:
+
+1. Edit `deployment/hostingsignal-devapi.production.env` and replace placeholders:
+  - `CHANGE_DB_PASSWORD`
+  - `CHANGE_LICENSE_API_KEY`
+  - `HSDEV_WHMCS_ALLOWED_IPS`
+2. Apply it to the running WSL service (creates systemd drop-in + restarts safely):
+
+```bash
+cd /usr/local/hspanel
+sudo bash scripts/apply_devapi_production_env_wsl.sh
+```
+
+3. Verify launch readiness from dashboard preflight (`/api/system/preflight`).
 
 ## 📋 Systemd Services
 
