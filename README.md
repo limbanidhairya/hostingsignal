@@ -1,244 +1,136 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/frontend/public/logo.png" alt="HostingSignal Logo" width="180" onerror="this.src='https://via.placeholder.com/180?text=HostingSignal'"/>
+  <img src="developer-panel/web/public/branding/hostingsignal-logo.png" alt="HostingSignal Logo" width="190" />
 </p>
 
-<h1 align="center">🚀 HostingSignal Panel</h1>
+<h1 align="center">HostingSignal</h1>
 
 <p align="center">
-  <strong>⚡ Service-First Hosting Control Platform with Partner Portal + WHMCS Integration</strong>
+  Service-first hosting control platform with Partner Panel, WHMCS integration, queue orchestration, and production-ready runtime hardening.
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/Version-1.0.0-2563eb?style=for-the-badge&logo=semantic-release">
-  <img alt="Backend FastAPI" src="https://img.shields.io/badge/API-FastAPI-009688?style=for-the-badge&logo=fastapi">
-  <img alt="Frontend Next.js" src="https://img.shields.io/badge/Web-Next.js-black?style=for-the-badge&logo=next.js">
-  <img alt="WHMCS" src="https://img.shields.io/badge/Billing-WHMCS%20Addon-0ea5e9?style=for-the-badge&logo=php">
-  <img alt="Queue" src="https://img.shields.io/badge/Queue-hs--taskd-f59e0b?style=for-the-badge&logo=gnubash">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-1f6feb?style=for-the-badge" />
+  <img alt="Release" src="https://img.shields.io/badge/release-v1.0.0-0f766e?style=for-the-badge" />
+  <img alt="API" src="https://img.shields.io/badge/API-FastAPI-009688?style=for-the-badge" />
+  <img alt="Web" src="https://img.shields.io/badge/Web-Next.js-111827?style=for-the-badge" />
 </p>
 
----
+## Latest Project Status (March 15, 2026)
 
-## 🧭 Overview
-HostingSignal is a modern control panel stack with:
+- Current release tag: `v1.0.0`
+- Release branch: `release/2026-03-15-rc1`
+- Core runtime checks were validated across ports `2083`, `2086`, `2087`, and `3000`
+- Launch preflight reached `critical_failures=0` in release path
+- Release process and merge governance docs are in `docs/release_scope_2026-03-15.md` and `docs/merge_checklist_2026-03-15.md`
 
-- 🖥️ Partner/developer web panel (`developer-panel/web`)
-- 🔐 JWT auth API (`developer-panel/api`)
-- 📦 Plugin marketplace with plan-based gating + admin override
-- 💳 WHMCS server/addon module integration
-- 🧵 Queue-based execution daemon (`hs-taskd`) for lifecycle tasks
-- 🧰 Service-first Linux stack under `/usr/local/hspanel`
-
-## 🏗️ Current Architecture (Live)
+## Monorepo Layout
 
 ```text
 Hostingsignal/
-├── developer-panel/
-│   ├── api/                          # FastAPI (auth, analytics, plugins, whmcs, etc.)
-│   ├── services/                     # Registry, cluster, analytics, update, license sync
-│   └── web/                          # Next.js 14 partner portal
-├── license-server/                   # License API service
-├── usr/local/hspanel/
-│   ├── daemon/hs-taskd.pl            # Queue processor
-│   ├── scripts/                      # Provision/maintenance scripts
-│   ├── perl/HS/                      # Perl service modules
-│   └── plugins/whmcs-addon/          # WHMCS server + addon module scaffold
-├── systemd/                          # Service unit definitions
-├── deployment/                       # docker-compose + k8s manifests
-└── install.sh                        # Service-first installer
+|- developer-panel/
+|  |- api/                 # FastAPI partner/dev API
+|  |- services/            # Analytics, cluster, updates, license sync
+|  |- web/                 # Next.js partner portal
+|- license-server/         # Licensing service
+|- usr/local/hspanel/      # Core daemon, scripts, plugins, templates
+|- deployment/             # Compose, manifests, deployment helpers
+|- systemd/                # Linux service units
+`- docs/                   # Architecture and release docs
 ```
 
-## 🌐 Live Endpoints (Local Runtime)
+## Core Services
 
-- 🟢 Partner Login: `http://localhost:3000/login`
-- 🟢 Partner Dashboard: `http://localhost:3000/`
-- 🟢 Dev API Health: `http://localhost:2087/api/health`
-- 🟢 Dev API Docs: `http://localhost:2087/api/docs`
-- 🟢 Web-proxy API Health: `http://localhost:3000/devapi/api/health`
+| Service | Port | Purpose |
+|---|---:|---|
+| `hostingsignal-web` | `3000` | Next.js partner panel |
+| `hostingsignal-devapi` | `2087` | Partner/developer FastAPI |
+| `hostingsignal-daemon` | `2086` | Core daemon panel APIs |
+| `hostingsignal-api` | `2083` | Core backend API |
+| `hostingsignal-taskd` | n/a | Queue worker and lifecycle execution |
 
-## 🔐 Authentication Notes
+## Local Runtime Endpoints
 
-- Server session cookie key: `hsdev_session` (HTTP-only)
-- Login/session endpoints:
-  - `POST /api/session/login`
-  - `GET /api/session/me`
-  - `POST /api/session/logout`
-  - `GET /api/session/token`
-- Middleware route guard enforces session before `/` dashboard access.
-- Legacy local token key `hsdev_token` is still mirrored for API authorization headers.
+- Partner login: `http://localhost:3000/login`
+- Partner dashboard: `http://localhost:3000/`
+- Dev API health: `http://localhost:2087/api/health`
+- Dev API docs: `http://localhost:2087/api/docs`
+- Proxy health via web: `http://localhost:3000/devapi/api/health`
 
-## 🎨 Branding Notes
+## Key Platform Capabilities
 
-- Primary logo asset: `developer-panel/web/public/branding/hostingsignal-logo.png`
-- Runtime logo path: `/branding/hostingsignal-logo.png`
-- Current UI palette is aligned to brand blues in `developer-panel/web/src/app/layout.js` and `developer-panel/web/src/app/globals.css`.
+- WHMCS callbacks for create/suspend/unsuspend/terminate lifecycle actions
+- Product mapping support (`product_id -> package/plan/plugins/admin_override`)
+- Queue-based orchestration through `/var/hspanel/queue`
+- Admin-protected internal orchestration routes under `/internal/services/*`
+- Launch readiness and hardening checks via `/api/system/preflight`
 
-## 🧩 Built-in Plugin Catalog
+## Service-First Installer
 
-- 🛡️ Open Source Vulnerability Scanner
-- 🧱 WordPress Manager
-- 🟢 Node App Manager
-- ⚛️ React App Manager
-- 🐍 Python App Manager
-- 🐳 Docker Service Manager
-- 💳 WHMCS Billing Integration Addon
-
-Plan logic:
-
-- 📈 Tiered plans: `starter`, `professional`, `business`, `enterprise`
-- 🔒 Premium plugins require higher plan
-- 👑 `admin_override=true` can enable premium plugin on lower plan during package creation
-
-## 💳 WHMCS Integration (Implemented)
-
-### Server Module Callbacks
-
-- `CreateAccount`
-- `SuspendAccount`
-- `UnsuspendAccount`
-- `TerminateAccount`
-- `TestConnection`
-
-### WHMCS API Endpoints
-
-- `/api/whmcs/health`
-- `/api/whmcs/package/sync`
-- `/api/whmcs/provision/create-account`
-- `/api/whmcs/provision/suspend-account`
-- `/api/whmcs/provision/unsuspend-account`
-- `/api/whmcs/provision/terminate-account`
-- `/api/whmcs/product-mappings`
-- `/api/whmcs/product-mappings/upsert`
-- `/api/whmcs/product-mappings/resolve`
-- `/api/whmcs/product-mappings/delete`
-
-### Product Mapping Capability
-
-WHMCS `product_id` can map to:
-
-- package name
-- plan
-- plugin list
-- admin override flag
-
-Provisioning auto-resolves mapping when `whmcs_product_id` is sent.
-
-## 🧵 Queue + Daemon Execution Flow
-
-1. WHMCS callback hits `/api/whmcs/provision/*`
-2. API writes queue job to `/var/hspanel/queue/*.json`
-3. `hostingsignal-taskd` picks job and dispatches action
-4. Script `whmcs_provision.sh` executes lifecycle state change
-5. Results written to `/var/hspanel/queue/done/*.result.json`
-6. Service state stored at `/var/hspanel/userdata/whmcs_services/<service_id>.json`
-
-## ⚙️ Service-First Install
+Canonical installer is repository root `install.sh`.
 
 ```bash
-# 1) Stage open-source service bundle
+# Stage
 sudo ./install.sh --mode stage --local-root ./local/services
 
-# 2) Install system stack
+# Install
 sudo ./install.sh --mode install --db-engine mariadb --web-stack openlitespeed
 
-# 3) Configure panel integration
+# Configure
 sudo ./install.sh --mode configure --local-root ./local/services
 ```
 
-## 🧪 Runtime Commands
+## Quick Operations
 
 ```bash
-# WSL service checks
+# WSL service state
 sudo systemctl status hostingsignal-devapi
 sudo systemctl status hostingsignal-web
 sudo systemctl status hostingsignal-taskd
 
-# Rebuild and restart web
-cd /usr/local/hspanel/developer-panel/web
-npm run build
+# Restart API and web
+sudo systemctl restart hostingsignal-devapi
 sudo systemctl restart hostingsignal-web
 
-# Restart API
-sudo systemctl restart hostingsignal-devapi
-
-# Container runtime quick checks
-hsctl container status
-hsctl container list
-
-# DNS replication checks
-hsctl dns verify --zone example.com
-
-# Deploy current iteration to WSL target and run verification
-sudo bash scripts/deploy_iteration_wsl.sh
-
-# Fix Docker socket permissions in WSL for container runner
-sudo bash scripts/fix_container_runtime_permissions_wsl.sh
-
-# Show current dev API test credentials and verify login
-sudo bash scripts/get_test_credentials_wsl.sh --verify
+# Build Next.js standalone bundle (when running from deployed path)
+cd /usr/local/hspanel/developer-panel/web
+npm run build
 ```
 
-## 🚀 Launch Hardening (2-Day Checklist)
+## Branding
 
-Generate a hardened HSDEV env file:
+- Source logo: `developer-panel/web/public/branding/hostingsignal-logo.png`
+- Runtime path: `/branding/hostingsignal-logo.png`
 
-```bash
-cd /usr/local/hspanel
-bash scripts/generate_production_env.sh
+## Docs and GitHub Pages (Prepared)
+
+This repository now includes a GitHub Pages workflow for documentation publishing.
+
+- Workflow: `.github/workflows/docs-pages.yml`
+- Docs root for Pages: `docs/`
+- Docs landing page: `docs/index.md`
+
+### Planned Production Publish
+
+When you share server details and domain, we will finalize:
+
+1. `Settings -> Pages` source/permissions verification
+2. Custom domain (`CNAME`) setup
+3. DNS records (`A`/`ALIAS`/`CNAME`) for your domain
+4. Optional reverse-proxy/server mirror if you want docs served from your own host as well
+
+Default Pages URL pattern will be:
+
+```text
+https://<owner>.github.io/hostingsignal/
 ```
 
-Then:
+## Release and Process Docs
 
-1. Edit `deployment/hostingsignal-devapi.production.env` and replace placeholders:
-  - `CHANGE_DB_PASSWORD`
-  - `CHANGE_LICENSE_API_KEY`
-  - `HSDEV_WHMCS_ALLOWED_IPS`
-2. Apply it to the running WSL service (creates systemd drop-in + restarts safely):
+- `docs/release_scope_2026-03-15.md`
+- `docs/merge_checklist_2026-03-15.md`
+- `.github/PULL_REQUEST_TEMPLATE.md`
+- `docs/handoff_2026-03-15.md`
 
-```bash
-cd /usr/local/hspanel
-sudo bash scripts/apply_devapi_production_env_wsl.sh
-```
+## License
 
-3. Verify launch readiness from dashboard preflight (`/api/system/preflight`).
-
-## 📋 Systemd Services
-
-| Service | Purpose | Port |
-|---|---|---|
-| `hostingsignal-devapi` | Partner/Developer API (FastAPI) | `2087` |
-| `hostingsignal-web` | Partner portal (Next.js standalone) | `3000` |
-| `hostingsignal-taskd` | Queue processor (Perl daemon) | n/a |
-| `hostingsignal-daemon` | Core panel daemon | `2086` |
-| `hostingsignal-api` | Core API service | `2083` |
-
-## 🛠️ Troubleshooting Quick Guide
-
-### 🔁 Login Redirect Loop
-
-1. Open `http://localhost:3000/login`
-2. Hard refresh (`Ctrl+F5`)
-3. Verify proxy API health: `http://localhost:3000/devapi/api/health`
-4. Verify direct API health: `http://localhost:2087/api/health`
-
-### 🐢 Slow Dashboard
-
-Check endpoint timings:
-
-```bash
-curl -s -o /dev/null -w "stats=%{time_total}\n" http://localhost:3000/devapi/api/analytics/stats
-curl -s -o /dev/null -w "software=%{time_total}\n" http://localhost:3000/devapi/api/software/list
-```
-
-Expected: sub-second responses in healthy local runtime.
-
-## 📚 Key Docs
-
-- `handoff130326.md` (latest implementation + runbook)
-- `docs/06_cyberpanel_aligned_approach.md`
-- `docs/05_queue_security_plugins_microservices.md`
-
----
-
-<p align="center">
-  🛡️ Built with care by the HostingSignal team • ⚙️ Service-first • 🚀 Production-focused
-</p>
+Internal project. Add formal license text before public redistribution.
