@@ -21,12 +21,12 @@ export default function RootLayout({ children }) {
                         theme: {
                             extend: {
                                 colors: {
-                                    "primary": "#3c83f6",
-                                    "accent": "#00d4ff",
+                                    "primary": "#0ea5e9",
+                                    "accent": "#38bdf8",
                                     "background-light": "#f5f7f8",
-                                    "background-dark": "#0a1628",
-                                    "card-dark": "#112240",
-                                    "border-dark": "#1d2d50",
+                                    "background-dark": "#061529",
+                                    "card-dark": "#0d243d",
+                                    "border-dark": "#1f3a56",
                                 },
                                 fontFamily: {
                                     "display": ["Inter", "sans-serif"]

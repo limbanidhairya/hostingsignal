@@ -1,4 +1,5 @@
 """Developer Panel Database Models & Connection"""
+import socket
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SAEnum, Uuid, select
@@ -206,6 +207,73 @@ async def init_db():
 
         if changed:
             await session.commit()
+
+        if settings.AUTO_REGISTER_LOCAL_SERVER:
+            await _ensure_local_managed_server(session)
+
+
+async def _ensure_local_managed_server(session: AsyncSession):
+    hostname = (settings.LOCAL_SERVER_HOSTNAME or "backend").strip()
+    address = (settings.LOCAL_SERVER_ADDRESS or hostname).strip()
+    resolved_ip = address
+
+    try:
+        resolved_ip = socket.gethostbyname(address)
+    except OSError:
+        # Fall back to the configured address when DNS resolution is unavailable.
+        resolved_ip = address
+
+    metadata = {
+        "region": settings.LOCAL_SERVER_REGION,
+        "bootstrap": True,
+        "address": address,
+    }
+
+    result = await session.execute(
+        select(ManagedServer).where(ManagedServer.hostname == hostname).limit(1)
+    )
+    server = result.scalar_one_or_none()
+
+    if server is None:
+        server = ManagedServer(
+            hostname=hostname,
+            ip_address=resolved_ip,
+            port=settings.LOCAL_SERVER_PORT,
+            status="online",
+            os_info=settings.LOCAL_SERVER_OS_INFO or None,
+            license_key=settings.LOCAL_SERVER_LICENSE_KEY or None,
+            last_heartbeat=datetime.utcnow(),
+            metadata_=metadata,
+        )
+        session.add(server)
+        await session.commit()
+        return
+
+    changed = False
+    if server.ip_address != resolved_ip:
+        server.ip_address = resolved_ip
+        changed = True
+    if server.port != settings.LOCAL_SERVER_PORT:
+        server.port = settings.LOCAL_SERVER_PORT
+        changed = True
+    if server.status != "online":
+        server.status = "online"
+        changed = True
+    if server.os_info != (settings.LOCAL_SERVER_OS_INFO or None):
+        server.os_info = settings.LOCAL_SERVER_OS_INFO or None
+        changed = True
+    if server.license_key != (settings.LOCAL_SERVER_LICENSE_KEY or None):
+        server.license_key = settings.LOCAL_SERVER_LICENSE_KEY or None
+        changed = True
+    if (server.metadata_ or {}) != metadata:
+        server.metadata_ = metadata
+        changed = True
+
+    server.last_heartbeat = datetime.utcnow()
+    changed = True
+
+    if changed:
+        await session.commit()
 
 
 async def _first_admin_id(session: AsyncSession):
