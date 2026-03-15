@@ -1,0 +1,19 @@
+[Unit]
+Description=HostingSignal Recovery Manager (single cycle)
+Documentation=https://docs.hostingsignal.com
+After=network.target hostingsignal-devapi.service
+Wants=hostingsignal-devapi.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/usr/local/hspanel
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+ExecStart=/usr/bin/python3 /usr/local/hspanel/core/recovery-manager/recovery_manager.py --once
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hostingsignal-recovery
+
+[Install]
+WantedBy=multi-user.target

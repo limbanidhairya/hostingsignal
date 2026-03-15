@@ -1,0 +1,12 @@
+master:
+  ip: 10.0.0.1
+
+slaves:
+  - 10.0.0.2
+  - 10.0.0.3
+
+sync:
+  provider: powerdns
+  api_url: http://127.0.0.1:8053
+  auto_discovery: true
+  health_interval_seconds: 30

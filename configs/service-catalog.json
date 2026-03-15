@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "local_root": "services",
+  "runtime_root": "runtime/local-stack",
+  "data_root": "data",
+  "log_root": "logs/local-services",
+  "profiles": {
+    "core": [
+      "openlitespeed",
+      "apache",
+      "mariadb",
+      "mysql",
+      "redis",
+      "memcached",
+      "phpmyadmin",
+      "certbot"
+    ],
+    "mail": [
+      "postfix",
+      "dovecot",
+      "rainloop",
+      "spamassassin",
+      "opendkim"
+    ],
+    "dns": [
+      "powerdns"
+    ],
+    "ftp": [
+      "pureftpd"
+    ],
+    "security": [
+      "fail2ban",
+      "firewalld",
+      "modsecurity"
+    ],
+    "ops": [
+      "supervisor",
+      "cron"
+    ]
+  },
+  "services": {
+    "openlitespeed": {
+      "kind": "web",
+      "port": 8080,
+      "container_port": 8080,
+      "profile": "core"
+    },
+    "apache": {
+      "kind": "web",
+      "port": 8081,
+      "container_port": 80,
+      "profile": "core"
+    },
+    "mariadb": {
+      "kind": "database",
+      "port": 3306,
+      "container_port": 3306,
+      "profile": "core"
+    },
+    "mysql": {
+      "kind": "database",
+      "port": 3307,
+      "container_port": 3306,
+      "profile": "core"
+    },
+    "postfix": {
+      "kind": "mail",
+      "port": 2525,
+      "container_port": 25,
+      "profile": "mail"
+    },
+    "dovecot": {
+      "kind": "mail",
+      "port": 2993,
+      "container_port": 993,
+      "profile": "mail"
+    },
+    "rainloop": {
+      "kind": "mail-web",
+      "port": 8888,
+      "container_port": 80,
+      "profile": "mail"
+    },
+    "spamassassin": {
+      "kind": "mail-filter",
+      "port": 2783,
+      "container_port": 783,
+      "profile": "mail"
+    },
+    "opendkim": {
+      "kind": "mail-filter",
+      "port": 2889,
+      "container_port": 8891,
+      "profile": "mail"
+    },
+    "powerdns": {
+      "kind": "dns",
+      "port": 5353,
+      "container_port": 5353,
+      "profile": "dns"
+    },
+    "pureftpd": {
+      "kind": "ftp",
+      "port": 2121,
+      "container_port": 21,
+      "profile": "ftp"
+    },
+    "redis": {
+      "kind": "cache",
+      "port": 6379,
+      "container_port": 6379,
+      "profile": "core"
+    },
+    "memcached": {
+      "kind": "cache",
+      "port": 11211,
+      "container_port": 11211,
+      "profile": "core"
+    },
+    "certbot": {
+      "kind": "ssl",
+      "port": 0,
+      "container_port": 0,
+      "profile": "core"
+    },
+    "fail2ban": {
+      "kind": "security",
+      "port": 0,
+      "container_port": 0,
+      "profile": "security"
+    },
+    "firewalld": {
+      "kind": "security",
+      "port": 0,
+      "container_port": 0,
+      "profile": "security"
+    },
+    "modsecurity": {
+      "kind": "security",
+      "port": 0,
+      "container_port": 0,
+      "profile": "security"
+    },
+    "phpmyadmin": {
+      "kind": "tool",
+      "port": 8082,
+      "container_port": 80,
+      "profile": "core"
+    },
+    "supervisor": {
+      "kind": "tool",
+      "port": 9001,
+      "container_port": 9001,
+      "profile": "ops"
+    },
+    "cron": {
+      "kind": "tool",
+      "port": 0,
+      "container_port": 0,
+      "profile": "ops"
+    }
+  }
+}

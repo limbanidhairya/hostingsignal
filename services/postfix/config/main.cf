@@ -1,0 +1,11 @@
+compatibility_level = 3.6
+queue_directory = /var/spool/postfix
+command_directory = /usr/sbin
+daemon_directory = /usr/lib/postfix/sbin
+data_directory = /var/lib/postfix
+mail_owner = postfix
+myhostname = mail.hostingsignal.local
+myorigin = hostingsignal.local
+inet_interfaces = all
+mydestination = localhost
+smtpd_banner = $myhostname ESMTP HostingSignal Sandbox
