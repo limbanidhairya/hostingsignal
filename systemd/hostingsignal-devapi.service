@@ -1,0 +1,25 @@
+[Unit]
+Description=HostingSignal Developer API Service
+Documentation=https://docs.hostingsignal.com
+After=network.target
+
+[Service]
+Type=exec
+User=root
+Group=root
+WorkingDirectory=/usr/local/hspanel/developer-panel
+EnvironmentFile=-/etc/hostingsignal/hostingsignal-devapi.env
+Environment="PATH=/usr/local/hspanel/developer-panel/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONPATH=/usr/local/hspanel/developer-panel"
+ExecStart=/usr/local/hspanel/developer-panel/venv/bin/uvicorn api.main:app --host 0.0.0.0 --port 2087 --workers 2 --access-log --log-level info
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hostingsignal-devapi
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

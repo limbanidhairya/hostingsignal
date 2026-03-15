@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "environment": {
+    "platform": "windows",
+    "distribution": "unknown",
+    "version": "unknown",
+    "is_wsl": false
+  },
+  "web_server": "apache",
+  "database": "mariadb",
+  "paths": {
+    "services_root": "services",
+    "runtime_root": "runtime/local-stack",
+    "data_root": "data",
+    "log_root": "logs/local-services"
+  },
+  "ports": {
+    "web": 8081,
+    "database": 3309,
+    "redis": 6382,
+    "memcached": 11214,
+    "phpmyadmin": 8084,
+    "powerdns": 5353,
+    "ftp": 2121
+  },
+  "profiles": [
+    "core",
+    "mail",
+    "dns",
+    "ftp",
+    "security",
+    "ops"
+  ],
+  "secrets": {
+    "db_root_password": "mV8kb7U6DPZUvyD9DtrmQRbR",
+    "db_app_password": "rCbLgquFUy2BsI2NsY1Wy94a",
+    "pdns_api_key": "b8acb2274c8b44cd904a6243eed2a26c"
+  }
+}

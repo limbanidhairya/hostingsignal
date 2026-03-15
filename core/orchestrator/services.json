@@ -1,0 +1,63 @@
+{
+  "kernel": [
+    "hostingsignal-daemon",
+    "hostingsignal-taskd"
+  ],
+  "database": [
+    "mariadb"
+  ],
+  "cache": [
+    "redis-server",
+    "memcached"
+  ],
+  "web": [
+    "lsws",
+    "hostingsignal-web"
+  ],
+  "mail": [
+    "postfix",
+    "dovecot"
+  ],
+  "dns": [
+    "pdns"
+  ],
+  "ftp": [
+    "pure-ftpd"
+  ],
+  "panel": [
+    "hostingsignal-api",
+    "hostingsignal-devapi"
+  ],
+  "aliases": {
+    "webserver": [
+      "lsws"
+    ],
+    "database": [
+      "mariadb"
+    ],
+    "mail": [
+      "postfix",
+      "dovecot"
+    ],
+    "dns": [
+      "pdns"
+    ],
+    "ftp": [
+      "pure-ftpd"
+    ],
+    "cache": [
+      "redis-server",
+      "memcached"
+    ]
+  },
+  "startup_order": [
+    "kernel",
+    "database",
+    "cache",
+    "web",
+    "mail",
+    "dns",
+    "ftp",
+    "panel"
+  ]
+}
