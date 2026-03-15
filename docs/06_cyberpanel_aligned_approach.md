@@ -22,12 +22,10 @@ This keeps behavior predictable and makes install failures easier to isolate.
 
 ## Installer pipeline
 
-`install.sh` now supports explicit modes:
+`install.sh` now supports an explicit universal full-stack command and profile-aware startup:
 
-- `stage`: download and cache artifacts to a local root.
-- `install`: install required packages for the selected OS.
-- `configure`: wire panel directories and local webapps.
-- `all`: run all phases in order.
+- `--mode all --all`: generate, configure, and start the full local HostingSignal stack.
+- `--profile-set core`: start only the lighter core subset.
 
 Default local bundle root: `./local/services`
 
@@ -58,20 +56,11 @@ Purpose:
 ## Operations examples
 
 ```bash
-# Full run (stage + install + configure)
-sudo ./install.sh --mode all
+# Universal full-stack run
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
 
-# Use a custom local service root
-sudo ./install.sh --mode all --local-root /opt/hs-services
-
-# Download all artifacts first (offline prep)
-sudo ./install.sh --mode stage --local-root /opt/hs-services
-
-# Install only system packages from prepared bundle
-sudo ./install.sh --mode install --db-engine mariadb
-
-# Configure panel links after packages are ready
-sudo ./install.sh --mode configure
+# Core-only local stack
+bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 ## Notes

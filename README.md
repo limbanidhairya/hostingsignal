@@ -133,16 +133,19 @@ Provisioning auto-resolves mapping when `whmcs_product_id` is sent.
 
 ## ⚙️ Service-First Install
 
+Universal one-command install for the full local stack:
+
 ```bash
-# 1) Stage open-source service bundle
-sudo ./install.sh --mode stage --local-root ./local/services
-
-# 2) Install system stack
-sudo ./install.sh --mode install --db-engine mariadb --web-stack openlitespeed
-
-# 3) Configure panel integration
-sudo ./install.sh --mode configure --local-root ./local/services
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
+
+Core-only fallback:
+
+```bash
+bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
+```
+
+This command renders the compose stack, writes service workspaces, persists `configs/install-config.json`, and starts the selected full profile set in one run.
 
 ## 🧪 Runtime Commands
 
@@ -238,6 +241,7 @@ Expected: sub-second responses in healthy local runtime.
 - `docs/05_queue_security_plugins_microservices.md`
 - `docs/index.md`
 - `docs/admin_reference.md`
+- `docs/local_services_installer.md`
 
 ## 🌍 Documentation Site
 

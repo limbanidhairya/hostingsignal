@@ -19,6 +19,20 @@ This installer replaces the previous `/usr/local`-centric flow with a repository
 ./install.sh
 ```
 
+## Universal One-Command Install
+
+The installer now supports a true full-stack one-command run that generates config, renders compose assets, writes service workspaces, and starts all configured profiles.
+
+```bash
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+```
+
+Core-only fallback:
+
+```bash
+bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
+```
+
 Interactive selections:
 - Web server: OpenLiteSpeed or Apache
 - Database: MariaDB or MySQL
@@ -44,6 +58,17 @@ data/
 
 ## Current Install Mode
 The installer currently uses a compose-backed local sandbox because it is the most reproducible way to keep all service configuration and lifecycle inside the repository while avoiding direct dependency on `/usr/local`, `/etc`, and `/var`.
+
+Selected compose profiles are persisted in:
+- `configs/install-config.json`
+
+`--all` activates the full profile set:
+- `core`
+- `mail`
+- `dns`
+- `ftp`
+- `security`
+- `ops`
 
 ## Service Manager
 The compose-backed manager lives at:

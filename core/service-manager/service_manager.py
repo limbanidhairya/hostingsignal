@@ -82,14 +82,30 @@ class LocalServiceManager:
         cmd = [*self.compose_base_cmd, "-f", str(self.compose_file), *profile_args, *args]
         return self._run(cmd, cwd=self.root, env_file=self.env_file)
 
+    def _default_services(self) -> list[str]:
+        selected: list[str] = []
+        active_profiles = set(self.profiles)
+        web = self.install_config.get("web_server", "apache")
+        database = self.install_config.get("database", "mariadb")
+
+        for service_name, meta in self.catalog.get("services", {}).items():
+            if meta.get("profile") not in active_profiles:
+                continue
+            kind = meta.get("kind")
+            if kind == "web" and service_name != web:
+                continue
+            if kind == "database" and service_name != database:
+                continue
+            selected.append(service_name)
+
+        return selected
+
     def start_service(self, service: str | None = None) -> dict[str, Any]:
         args = ["up", "-d"]
         if service:
             args.append(service)
         else:
-            web = self.install_config.get("web_server", "apache")
-            database = self.install_config.get("database", "mariadb")
-            args.extend([web, database, "redis", "memcached", "phpmyadmin", "certbot"])
+            args.extend(self._default_services())
         result = self._compose(*args)
         return self._payload(result, action="start", service=service)
 

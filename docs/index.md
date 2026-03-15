@@ -73,10 +73,16 @@ Welcome to the HostingSignal documentation hub.
 
 ## Install Quick Start
 
-Master install command for the current repo-local sandbox:
+Universal one-command install for the current repo-local sandbox:
 
 ```bash
-bash ./install.sh --non-interactive --web openlitespeed --db mariadb
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+```
+
+Core-only fallback:
+
+```bash
+bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 Supported paths:

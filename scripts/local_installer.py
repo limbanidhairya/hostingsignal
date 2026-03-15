@@ -27,6 +27,10 @@ DB_CHOICES = {
     "1": "mariadb",
     "2": "mysql",
 }
+PROFILE_SET_CHOICES = {
+    "core": ["core"],
+    "full": ["core", "mail", "dns", "ftp", "security", "ops"],
+}
 
 
 def load_catalog() -> dict:
@@ -231,6 +235,32 @@ def prompt_choice(prompt: str, mapping: dict[str, str], default: str) -> str:
     raise SystemExit(f"Unsupported selection: {selected}")
 
 
+def resolve_profiles(args: argparse.Namespace, existing: dict, catalog: dict) -> list[str]:
+    available_profiles = list(catalog.get("profiles", {}).keys())
+    if not available_profiles:
+        return ["core"]
+
+    if args.profiles:
+        requested = [item.strip() for item in args.profiles.split(",") if item.strip()]
+        invalid = [item for item in requested if item not in available_profiles]
+        if invalid:
+            raise SystemExit(f"Unsupported profiles: {', '.join(invalid)}")
+        return requested
+
+    if args.profile_set:
+        return PROFILE_SET_CHOICES[args.profile_set][:]
+
+    if args.all or args.mode == "all":
+        return PROFILE_SET_CHOICES["full"][:]
+
+    existing_profiles = existing.get("profiles") or []
+    valid_existing = [item for item in existing_profiles if item in available_profiles]
+    if valid_existing:
+        return valid_existing
+
+    return PROFILE_SET_CHOICES["full"][:]
+
+
 def build_install_config(args: argparse.Namespace, catalog: dict) -> dict:
     existing = {}
     if INSTALL_CONFIG_PATH.exists():
@@ -244,6 +274,8 @@ def build_install_config(args: argparse.Namespace, catalog: dict) -> dict:
     else:
         web = web or existing.get("web_server", "openlitespeed")
         database = database or existing.get("database", "mariadb")
+
+    profiles = resolve_profiles(args, existing, catalog)
 
     paths = {
         "services_root": catalog["local_root"],
@@ -281,7 +313,7 @@ def build_install_config(args: argparse.Namespace, catalog: dict) -> dict:
         "database": database,
         "paths": paths,
         "ports": service_ports,
-        "profiles": ["core", "mail", "dns", "ftp", "security", "ops"],
+        "profiles": profiles,
         "secrets": {
             "db_root_password": existing.get("secrets", {}).get("db_root_password") or secrets.token_urlsafe(18),
             "db_app_password": existing.get("secrets", {}).get("db_app_password") or secrets.token_urlsafe(18),
@@ -741,11 +773,38 @@ def write_install_config(config: dict) -> None:
     INSTALL_CONFIG_PATH.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
 
 
+def resolve_services_to_start(config: dict, catalog: dict) -> list[str]:
+    selected: list[str] = []
+    active_profiles = set(config.get("profiles", []))
+    selected_web = config.get("web_server")
+    selected_database = config.get("database")
+
+    for service_name, meta in catalog.get("services", {}).items():
+        if meta.get("profile") not in active_profiles:
+            continue
+        kind = meta.get("kind")
+        if kind == "web" and service_name != selected_web:
+            continue
+        if kind == "database" and service_name != selected_database:
+            continue
+        selected.append(service_name)
+
+    return selected
+
+
+def build_compose_invocation(compose_base: list[str], compose_path: Path, env_path: Path, profiles: list[str], *args: str) -> list[str]:
+    profile_args: list[str] = []
+    for profile in profiles:
+        profile_args.extend(["--profile", profile])
+    return [*compose_base, "--env-file", str(env_path), "-f", str(compose_path), *profile_args, *args]
+
+
 def install(config: dict, start: bool) -> None:
     runtime_root = ROOT / config["paths"]["runtime_root"]
     compose_path = runtime_root / "docker-compose.yml"
     env_path = write_env_file(config)
     compose_base = detect_compose_base_cmd()
+    catalog = load_catalog()
     if compose_base is None:
         raise SystemExit("docker compose or docker-compose is required for the local installer flow")
     compose_path.write_text(render_compose(config), encoding="utf-8")
@@ -757,6 +816,7 @@ def install(config: dict, start: bool) -> None:
     print(f"- install-config.json written to {INSTALL_CONFIG_PATH}")
     print(f"- local compose stack written to {compose_path}")
     print(f"- service workspace created under {ROOT / config['paths']['services_root']}")
+    print(f"- active profile set: {', '.join(config['profiles'])}")
     print("Components in progress")
     print("- mail/dns/ftp/security containers are generated but not deeply validated yet")
     print("Errors detected")
@@ -766,17 +826,22 @@ def install(config: dict, start: bool) -> None:
     print("- added compose-backed service manager foundation")
 
     if start:
+        services_to_start = resolve_services_to_start(config, catalog)
         print("Next steps")
         print("- validating docker compose configuration")
-        run([*compose_base, "--env-file", str(env_path), "-f", str(compose_path), "config"], cwd=ROOT)
-        run([*compose_base, "--env-file", str(env_path), "-f", str(compose_path), "up", "-d", config["web_server"], config["database"], "redis", "memcached", "phpmyadmin", "certbot"], cwd=ROOT)
+        run(build_compose_invocation(compose_base, compose_path, env_path, config["profiles"], "config"), cwd=ROOT)
+        run(build_compose_invocation(compose_base, compose_path, env_path, config["profiles"], "up", "-d", *services_to_start), cwd=ROOT)
         attempt_devpanel_registration(config)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="HostingSignal local services installer")
+    parser.add_argument("--mode", choices=["all"], default=None)
+    parser.add_argument("--all", action="store_true", help="Generate, configure, and start the full HostingSignal local stack")
     parser.add_argument("--web", choices=["openlitespeed", "apache"], default=None)
     parser.add_argument("--db", choices=["mariadb", "mysql"], default=None)
+    parser.add_argument("--profile-set", choices=["core", "full"], default=None)
+    parser.add_argument("--profiles", default=None, help="Comma-separated compose profiles to activate")
     parser.add_argument("--non-interactive", action="store_true")
     parser.add_argument("--skip-start", action="store_true")
     return parser.parse_args()

@@ -28,10 +28,16 @@ This page is intended to be the future GitHub Pages admin-facing reference for i
 
 ## Master Install Command
 
-Use this command for the current repo-local installer flow:
+Use this command to generate, configure, and start the full HostingSignal local stack in one run:
 
 ```bash
-bash ./install.sh --non-interactive --web openlitespeed --db mariadb
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+```
+
+Core-only fallback:
+
+```bash
+bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 Prerequisites:
@@ -56,7 +62,7 @@ Run inside Ubuntu WSL:
 
 ```bash
 sudo apt update && sudo apt install -y python3 python3-pip docker-compose-plugin
-bash ./install.sh --non-interactive --web openlitespeed --db mariadb
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 If Docker is provided by Docker Desktop, enable WSL integration for the target distro first.
@@ -66,7 +72,7 @@ If Docker is provided by Docker Desktop, enable WSL integration for the target d
 Run on supported Linux hosts:
 
 ```bash
-bash ./install.sh --non-interactive --web openlitespeed --db mariadb
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 ## Core Runtime Ports
