@@ -6,7 +6,7 @@ markdown: kramdown
 permalink: pretty
 
 defaults:
-	- scope:
-			path: ""
-		values:
-			layout: default
+  - scope:
+      path: ""
+    values:
+      layout: default
