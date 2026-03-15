@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# When piped via "curl | bash" BASH_SOURCE is unset; fall back to empty so
+# resolve_root_dir skips the local-file check and bootstraps from GitHub.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd || echo "")"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 GITHUB_OWNER="${HS_REPO_OWNER:-limbanidhairya}"

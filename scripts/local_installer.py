@@ -850,7 +850,20 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     if not docker_available():
-        print("docker compose is required for the local installer flow", file=sys.stderr)
+        print(
+            "\n[HostingSignal] Docker / docker compose not found.\n"
+            "\n"
+            "Install Docker on Ubuntu/Debian:\n"
+            "  curl -fsSL https://get.docker.com | sh\n"
+            "  sudo usermod -aG docker $USER && newgrp docker\n"
+            "\n"
+            "For WSL2: enable 'Use the WSL 2 based engine' in Docker Desktop\n"
+            "  Settings -> Resources -> WSL Integration -> enable your distro.\n"
+            "\n"
+            "Then re-run the installer:"
+            "  curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash\n",
+            file=sys.stderr,
+        )
         return 1
 
     catalog = load_catalog()
