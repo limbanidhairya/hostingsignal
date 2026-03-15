@@ -22,6 +22,16 @@ permalink: /
 
 Welcome to the HostingSignal documentation hub.
 
+## Universal Install Command
+
+Run this one command for the full local stack:
+
+```bash
+bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+```
+
+Need step-by-step guidance? Open [Universal Install Guide]({{ '/install/' | relative_url }}).
+
 ## Quick Links
 
 <div class="card-grid">
