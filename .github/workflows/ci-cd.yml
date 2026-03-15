@@ -15,9 +15,6 @@ jobs:
   # ── Lint & Test Backend ──────────────────────────────────
   backend-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
@@ -28,31 +25,31 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r developer-panel/requirements.txt
           pip install pytest pytest-asyncio httpx
 
       - name: Lint
         run: |
           pip install ruff
-          ruff check .
+          ruff check developer-panel/api developer-panel/services license-server
 
       - name: Test
-        run: pytest --tb=short -q
+        run: pytest tests --tb=short -q
 
   # ── Lint & Build Frontend ───────────────────────────────
   frontend-build:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend
+        working-directory: developer-panel/web
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: developer-panel/web/package-lock.json
 
       - name: Install
         run: npm ci
@@ -81,13 +78,13 @@ jobs:
 
       - name: Build Backend Image
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:latest ./backend
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend:latest
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/devpanel-api:latest ./developer-panel
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/devpanel-api:latest
 
       - name: Build Frontend Image
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:latest ./frontend
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:latest
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/devpanel-web:latest ./developer-panel/web
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/devpanel-web:latest
 
       - name: Build License Server Image
         run: |
