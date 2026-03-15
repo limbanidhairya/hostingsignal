@@ -4,6 +4,7 @@ Creates/deletes databases and DB users via subprocess to mysql CLI.
 """
 from __future__ import annotations
 
+import os
 import re
 import logging
 import secrets
@@ -18,6 +19,14 @@ MYSQL_SOCKET = "/var/run/mysqld/mysqld.sock"
 
 class DatabaseManager(BaseServiceManager):
     """Manage MariaDB/MySQL databases and users on behalf of panel users."""
+
+    # Try to pick up a TCP connection target from the environment.
+    # When MYSQL_HOST is set the socket is skipped and TCP is used instead,
+    # which allows the panel backend container to reach an external MariaDB.
+    _MYSQL_HOST = os.getenv("MYSQL_HOST", "")
+    _MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
+    _MYSQL_ROOT_PWD = os.getenv("MYSQL_ROOT_PASSWORD", "")
+    _MYSQL_TCP_USER = os.getenv("MYSQL_ROOT_USER", "root")
 
     # ------------------------------------------------------------------
     # Service control
@@ -140,11 +149,20 @@ class DatabaseManager(BaseServiceManager):
     # Internal helpers
     # ------------------------------------------------------------------
     def _mysql(self, sql: str) -> tuple[int, str, str]:
-        """Execute SQL as root via unix socket (no password prompt in secure environments)."""
-        return self._run(
-            ["mysql", "--socket", MYSQL_SOCKET, "-u", "root", "-e", sql],
-            timeout=30,
-        )
+        """Execute SQL as root — uses TCP when MYSQL_HOST is set, socket otherwise."""
+        if self._MYSQL_HOST:
+            cmd = [
+                "mysql",
+                "-h", self._MYSQL_HOST,
+                "-P", self._MYSQL_PORT,
+                "-u", self._MYSQL_TCP_USER,
+            ]
+            if self._MYSQL_ROOT_PWD:
+                cmd.append(f"-p{self._MYSQL_ROOT_PWD}")
+            cmd += ["-e", sql]
+        else:
+            cmd = ["mysql", "--socket", MYSQL_SOCKET, "-u", "root", "-e", sql]
+        return self._run(cmd, timeout=30)
 
     @staticmethod
     def _validate_db_identifier(name: str) -> bool:

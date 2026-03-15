@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 
 from .deps import require_api_token
-from ..service_manager import DNSManager
+from service_manager import DNSManager
 
 router = APIRouter(prefix="/api/dns", tags=["dns"], dependencies=[Depends(require_api_token)])
 

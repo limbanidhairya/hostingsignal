@@ -76,15 +76,18 @@
                     <td class="px-6 py-4"><span class="px-2 py-1 rounded bg-slate-700/50 border border-slate-600 font-mono text-xs"><TMPL_VAR NAME=quota_mb> MB</span></td>
                     <td class="px-6 py-4"><span class="px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs font-bold border border-green-500/20"><TMPL_VAR NAME=status></span></td>
                     <td class="px-6 py-4 text-right space-x-2">
-                        <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Webmail">
+                        <a href="/webmail/" target="_blank" class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Webmail">
                             <span class="material-symbols-outlined text-[18px]">open_in_new</span>
-                        </button>
-                        <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Change Password">
+                        </a>
+                        <button type="button" onclick="changeMailboxPassword('<TMPL_VAR NAME=email>')" class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Change Password">
                             <span class="material-symbols-outlined text-[18px]">key</span>
                         </button>
-                        <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
-                            <span class="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
+                        <form method="POST" action="/api/mail/delete" class="inline-block" onsubmit="return confirm('Delete mailbox <TMPL_VAR NAME=email>?');">
+                            <input type="hidden" name="email" value="<TMPL_VAR NAME=email>">
+                            <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 </TMPL_LOOP>
@@ -92,3 +95,18 @@
         </table>
     </div>
 </div>
+
+<form id="mailPasswordForm" method="POST" action="/api/mail/change_password" class="hidden">
+    <input type="hidden" id="mailPasswordEmail" name="email" value="">
+    <input type="hidden" id="mailPasswordValue" name="password" value="">
+</form>
+
+<script>
+function changeMailboxPassword(email) {
+    const password = prompt(`Set a new password for ${email}:`);
+    if (!password) return;
+    document.getElementById('mailPasswordEmail').value = email;
+    document.getElementById('mailPasswordValue').value = password;
+    document.getElementById('mailPasswordForm').submit();
+}
+</script>

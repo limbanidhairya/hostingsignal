@@ -64,6 +64,13 @@ async def _get_current_admin(
     return admin
 
 
+async def get_current_admin(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+    db: AsyncSession = Depends(get_db),
+) -> DevAdmin:
+    return await _get_current_admin(credentials, db)
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     """Authenticate developer/admin user against DB."""

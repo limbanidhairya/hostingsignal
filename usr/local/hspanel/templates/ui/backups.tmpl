@@ -7,9 +7,11 @@
         <button class="px-4 py-2 bg-slate-800 text-white text-sm font-bold rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors flex items-center gap-2" onclick="document.getElementById('scheduleForm').classList.toggle('hidden')">
             <span class="material-symbols-outlined text-[20px]">calendar_month</span> Schedule
         </button>
-        <button class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
-            <span class="material-symbols-outlined text-[20px]">add_task</span> Generate Backup
-        </button>
+        <form method="POST" action="/api/backup/create">
+            <button type="submit" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">add_task</span> Generate Backup
+            </button>
+        </form>
     </div>
 </div>
 

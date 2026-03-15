@@ -120,10 +120,16 @@ class FTPManager(BaseServiceManager):
         rc, out, err = self._run([PURE_PW_BIN, "mkdb", PUREDB_FILE], timeout=20)
         if rc != 0:
             return ServiceResult(False, f"Failed to rebuild puredb: {err or out}")
+        # Best-effort service reload: in containerised / dev environments
+        # systemctl may not be available. The DB rebuild itself is sufficient
+        # for the user changes to take effect when the service is already running.
         restart = self.restart_service("pure-ftpd")
         if not restart.success:
-            return restart
-        return ServiceResult(True, "Pure-FTPd database rebuilt and service restarted")
+            logger.warning(
+                "pure-ftpd service reload failed (may be expected in containers): %s",
+                restart.message,
+            )
+        return ServiceResult(True, "Pure-FTPd database rebuilt")
 
     @staticmethod
     def _validate_username(username: str) -> bool:

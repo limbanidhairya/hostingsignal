@@ -30,6 +30,12 @@ function hostingsignal_whmcs_ConfigOptions()
             'Default' => '',
             'Description' => 'Must match HSDEV_WHMCS_SHARED_SECRET',
         ],
+        'HMAC Shared Secret (optional)' => [
+            'Type' => 'password',
+            'Size' => '60',
+            'Default' => '',
+            'Description' => 'Must match HSDEV_WHMCS_HMAC_SECRET when enabled',
+        ],
         'Package Plan' => [
             'Type' => 'dropdown',
             'Options' => 'starter,professional,business,enterprise',
@@ -66,7 +72,7 @@ function hostingsignal_whmcs_TestConnection(array $params)
 
 function hostingsignal_whmcs_CreateAccount(array $params)
 {
-    $pluginList = array_filter(array_map('trim', explode(',', (string)($params['configoption4'] ?? ''))));
+    $pluginList = array_filter(array_map('trim', explode(',', (string)($params['configoption5'] ?? ''))));
     $productId = (int)($params['pid'] ?? $params['packageid'] ?? 0);
 
     $payload = [
@@ -74,9 +80,9 @@ function hostingsignal_whmcs_CreateAccount(array $params)
         'client_id' => (int)($params['clientsdetails']['id'] ?? 0),
         'domain' => (string)($params['domain'] ?? ''),
         'package_name' => (string)($params['package']['name'] ?? $params['productname'] ?? 'whmcs-package'),
-        'plan' => (string)($params['configoption3'] ?? 'starter'),
+        'plan' => (string)($params['configoption4'] ?? 'starter'),
         'include_plugins' => array_values($pluginList),
-        'admin_override' => !empty($params['configoption5']),
+        'admin_override' => !empty($params['configoption6']),
         'whmcs_product_id' => $productId > 0 ? $productId : null,
     ];
 
@@ -148,12 +154,29 @@ function hostingsignal_whmcs_call_api(array $params, string $path, ?array $paylo
 {
     $baseUrl = rtrim((string)($params['configoption1'] ?? 'http://127.0.0.1:2087'), '/');
     $token = (string)($params['configoption2'] ?? '');
+    $hmacSecret = (string)($params['configoption3'] ?? '');
     $url = $baseUrl . $path;
+    $method = strtoupper($method);
+    $bodyJson = $method === 'POST' ? json_encode($payload ?: []) : '';
+    $timestamp = (string)time();
+    $nonce = '';
 
     $headers = [
         'Content-Type: application/json',
         'X-HS-WHMCS-Token: ' . $token,
     ];
+
+    if ($hmacSecret !== '') {
+        try {
+            $nonce = bin2hex(random_bytes(8));
+        } catch (Exception $e) {
+            $nonce = md5((string)microtime(true));
+        }
+        $signature = hash_hmac('sha256', $timestamp . '.' . $bodyJson, $hmacSecret);
+        $headers[] = 'X-HS-WHMCS-Timestamp: ' . $timestamp;
+        $headers[] = 'X-HS-WHMCS-Signature: ' . $signature;
+        $headers[] = 'X-HS-WHMCS-Nonce: ' . $nonce;
+    }
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -162,7 +185,9 @@ function hostingsignal_whmcs_call_api(array $params, string $path, ?array $paylo
 
     if ($method === 'POST') {
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload ?: []));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $bodyJson);
+    } else {
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
     }
 
     $raw = curl_exec($ch);

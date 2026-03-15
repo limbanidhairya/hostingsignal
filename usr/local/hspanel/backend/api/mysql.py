@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 
 from .deps import require_api_token
-from ..service_manager import DatabaseManager
+from service_manager import DatabaseManager
 
 router = APIRouter(prefix="/api/mysql", tags=["mysql"], dependencies=[Depends(require_api_token)])
 

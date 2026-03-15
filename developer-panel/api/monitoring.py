@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .database import get_db, ManagedServer, ServerMetric
+from .database import get_db, ManagedServer, ServerMetric, Cluster
 
 router = APIRouter(prefix="/api/monitoring", tags=["Monitoring"])
 
@@ -18,6 +18,14 @@ async def list_monitored_servers(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ManagedServer).order_by(ManagedServer.created_at.desc()))
     servers = result.scalars().all()
 
+    # Pre-fetch clusters for region lookup
+    cluster_ids = {s.cluster_id for s in servers if s.cluster_id}
+    clusters = {}
+    if cluster_ids:
+        cr = await db.execute(select(Cluster).where(Cluster.id.in_(cluster_ids)))
+        for c in cr.scalars().all():
+            clusters[c.id] = c
+
     output = []
     for server in servers:
         metric_result = await db.execute(
@@ -27,6 +35,9 @@ async def list_monitored_servers(db: AsyncSession = Depends(get_db)):
             .limit(1)
         )
         metric = metric_result.scalar_one_or_none()
+        cluster = clusters.get(server.cluster_id)
+        metadata = server.metadata_ or {}
+        region = cluster.region if cluster else metadata.get("region") or metadata.get("location")
         output.append(
             {
                 "id": str(server.id),
@@ -38,6 +49,8 @@ async def list_monitored_servers(db: AsyncSession = Depends(get_db)):
                 "disk": metric.disk_percent if metric else None,
                 "uptime_seconds": metric.uptime_seconds if metric else None,
                 "last_heartbeat": server.last_heartbeat.isoformat() if server.last_heartbeat else None,
+                "region": region,
+                "cluster_name": cluster.name if cluster else None,
             }
         )
 
