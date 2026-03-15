@@ -131,6 +131,57 @@ Provisioning auto-resolves mapping when `whmcs_product_id` is sent.
 5. Results written to `/var/hspanel/queue/done/*.result.json`
 6. Service state stored at `/var/hspanel/userdata/whmcs_services/<service_id>.json`
 
+## 🚀 Production VPS Installer
+
+One-command install on a fresh Linux VPS — no prerequisites required:
+
+```bash
+curl -sL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/installer/install.sh | sudo bash
+```
+
+Or via the canonical install domain:
+
+```bash
+curl -sL https://install.hostingsignal.in | sudo bash
+```
+
+**What gets installed:**
+
+| Component | Version | Notes |
+|---|---|---|
+| OpenLiteSpeed | Latest | High-performance web server |
+| MariaDB | 10.11 LTS | Official repository |
+| PHP | 8.1 / 8.2 / 8.3 | Multi-version, FPM |
+| phpMyAdmin | 5.2.x | Database management UI |
+| Postfix | System | MTA with SASL + TLS |
+| Dovecot | System | IMAP/POP3 + Maildir |
+| SnappyMail | Latest | Webmail client |
+| PowerDNS | Latest | Authoritative DNS + MySQL backend |
+| HS-Panel | Current | Control panel API + Web UI |
+
+**Supported OS:** Ubuntu 22.04/24.04, Debian 12, AlmaLinux 8/9, Rocky Linux 8/9, CentOS Stream 9
+
+**Installer flags:**
+```bash
+sudo bash installer/install.sh --skip-mail --skip-dns   # minimal
+sudo bash installer/install.sh --unattended              # non-interactive 
+sudo bash installer/install.sh --skip-firewall --dev     # development
+```
+
+Credentials are written to \/root/hspanel_credentials.txt\ after install.
+
+| Access URL | Purpose |
+|---|---|
+| \http://<IP>:3000\ | HS-Panel UI |
+| \http://<IP>:2087\ | Panel API |
+| \https://<IP>:7080\ | OpenLiteSpeed Admin |
+| \http://<IP>/phpmyadmin\ | phpMyAdmin |
+| \http://<IP>/webmail\ | SnappyMail Webmail |
+
+Full install guide: [docs.hostingsignal.in/install/](https://docs.hostingsignal.in/install/)
+
+---
+
 ## ⚙️ Service-First Install
 
 Universal one-command install — no clone needed, runs directly from GitHub:
