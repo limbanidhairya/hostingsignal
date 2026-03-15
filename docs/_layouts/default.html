@@ -11,6 +11,13 @@
     <link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
   </head>
   <body>
+    <section class="global-install-bar" aria-label="Universal install command">
+      <div class="global-install-bar__inner">
+        <span class="global-install-bar__label">Universal Install</span>
+        <code>curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash</code>
+        <a class="header-link" href="{{ '/install/' | relative_url }}">Install Guide</a>
+      </div>
+    </section>
     <div class="page-chrome">
       <aside class="sidebar glass">
         <a class="brand" href="{{ '/' | relative_url }}">
@@ -50,11 +57,6 @@
             <a class="header-link" href="http://localhost:3000/">Panel</a>
           </div>
         </header>
-        <section class="install-strip glass" aria-label="Universal install command">
-          <span class="install-strip__label">Universal Install</span>
-          <code>bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb</code>
-          <a class="header-link" href="{{ '/install/' | relative_url }}">Install Guide</a>
-        </section>
         <main class="content glass">
           {{ content }}
         </main>
