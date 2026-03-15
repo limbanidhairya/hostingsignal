@@ -24,7 +24,13 @@ Welcome to the HostingSignal documentation hub.
 
 ## Universal Install Command
 
-Run this one command for the full local stack:
+One command — no clone needed, runs directly from GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+```
+
+Local checkout variant:
 
 ```bash
 bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb

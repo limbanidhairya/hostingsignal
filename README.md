@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/frontend/public/logo.png" alt="HostingSignal Logo" width="180" onerror="this.src='https://via.placeholder.com/180?text=HostingSignal'"/>
+  <img src="https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/developer-panel/web/public/branding/hostingsignal-logo.png" alt="HostingSignal Logo" width="180"/>
 </p>
 
 <h1 align="center">🚀 HostingSignal Panel</h1>
@@ -133,13 +133,15 @@ Provisioning auto-resolves mapping when `whmcs_product_id` is sent.
 
 ## ⚙️ Service-First Install
 
-GitHub one-command universal install (no manual clone required):
+Universal one-command install — no clone needed, runs directly from GitHub:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
 ```
 
-Universal one-command install for the full local stack:
+This fetches the latest installer, clones the repo into a temp directory, generates the full Docker Compose stack, writes `configs/install-config.json`, and starts the selected profile set.
+
+Local checkout variant:
 
 ```bash
 bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
@@ -151,7 +153,7 @@ Core-only fallback:
 bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
-This command renders the compose stack, writes service workspaces, persists `configs/install-config.json`, and starts the selected full profile set in one run.
+Full install guide: [docs.hostingsignal.in/install/](https://docs.hostingsignal.in/install/)
 
 ## 🧪 Runtime Commands
 

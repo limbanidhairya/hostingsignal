@@ -48,20 +48,30 @@ Use this when you want a lighter local stack.
 ### Linux (Ubuntu/Debian)
 
 ```bash
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
 ```
 
 ### Windows (WSL2 Ubuntu 24.04)
 
+First ensure Docker Desktop is running with WSL integration enabled for your distro, then:
+
 ```bash
-sudo apt update && sudo apt install -y python3 python3-pip docker-compose-plugin
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+sudo apt update && sudo apt install -y python3 python3-pip
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+```
+
+If Docker is not installed inside WSL:
+
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER && newgrp docker
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
 ```
 
 ### Core-only quick run
 
 ```bash
-bash ./install.sh --non-interactive --profile-set core --web apache --db mariadb
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash -s -- --non-interactive --profile-set core --web apache --db mariadb
 ```
 
 ## Verify After Install
