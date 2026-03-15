@@ -22,7 +22,7 @@ This page is the admin-facing reference for installs, release status, service po
 ## Primary Admin URLs
 
 - GitHub Pages docs root: `https://docs.hostingsignal.in/`
-- Admin reference page: `https://docs.hostingsignal.in/admin_reference.html`
+- Admin reference page: `https://docs.hostingsignal.in/admin_reference/`
 - Local partner panel: `http://localhost:3000/`
 - Local dev API docs: `http://localhost:2087/api/docs`
 
