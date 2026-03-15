@@ -1,10 +1,11 @@
 """Cluster Manager Service — Orchestrates multi-server clusters"""
-import httpx
-import asyncio
 import logging
+import uuid
 from datetime import datetime, timedelta
-from typing import Optional, List
-from sqlalchemy import select, func, update
+from typing import Optional
+
+import httpx
+from sqlalchemy import or_, select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.database import Cluster, ManagedServer, ServerMetric
 from api.config import get_settings
@@ -43,13 +44,40 @@ class ClusterManagerService:
 
     async def register_server(self, db: AsyncSession, hostname: str, ip_address: str,
                               port: int = 8000, cluster_id: str = None,
-                              os_info: str = None, license_key: str = None) -> ManagedServer:
-        server = ManagedServer(
-            hostname=hostname, ip_address=ip_address, port=port,
-            cluster_id=cluster_id, os_info=os_info, license_key=license_key,
-            status="unknown", last_heartbeat=datetime.utcnow(),
+                              os_info: str = None, license_key: str = None,
+                              metadata: dict | None = None,
+                              initial_status: str = "online") -> ManagedServer:
+        result = await db.execute(
+            select(ManagedServer).where(
+                or_(ManagedServer.hostname == hostname, ManagedServer.ip_address == ip_address)
+            ).limit(1)
         )
-        db.add(server)
+        server = result.scalar_one_or_none()
+
+        if server is None:
+            server = ManagedServer(
+                hostname=hostname,
+                ip_address=ip_address,
+                port=port,
+                cluster_id=cluster_id,
+                os_info=os_info,
+                license_key=license_key,
+                metadata_=metadata or {},
+                status=initial_status,
+                last_heartbeat=datetime.utcnow(),
+            )
+            db.add(server)
+        else:
+            server.hostname = hostname
+            server.ip_address = ip_address
+            server.port = port
+            server.cluster_id = cluster_id
+            server.os_info = os_info
+            server.license_key = license_key
+            server.metadata_ = metadata or server.metadata_ or {}
+            server.status = initial_status or server.status
+            server.last_heartbeat = datetime.utcnow()
+
         await db.commit()
         await db.refresh(server)
         logger.info(f"Server registered: {hostname} ({ip_address})")
@@ -99,7 +127,8 @@ class ClusterManagerService:
         return server
 
     async def heartbeat(self, db: AsyncSession, server_id: str, metrics: dict = None) -> dict:
-        result = await db.execute(select(ManagedServer).where(ManagedServer.id == server_id))
+        server_uuid = uuid.UUID(str(server_id))
+        result = await db.execute(select(ManagedServer).where(ManagedServer.id == server_uuid))
         server = result.scalar_one_or_none()
         if not server:
             raise ValueError("Server not found")
@@ -113,7 +142,7 @@ class ClusterManagerService:
             server.disk_gb = metrics.get("disk_gb", server.disk_gb)
 
             metric = ServerMetric(
-                server_id=server_id,
+                server_id=server_uuid,
                 cpu_percent=metrics.get("cpu_percent"),
                 ram_percent=metrics.get("ram_percent"),
                 disk_percent=metrics.get("disk_percent"),

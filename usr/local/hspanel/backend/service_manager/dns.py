@@ -4,6 +4,7 @@ Uses PowerDNS HTTP API (localhost:8053) for all operations.
 """
 from __future__ import annotations
 
+import os
 import re
 import logging
 from typing import Any
@@ -15,7 +16,10 @@ from .base import BaseServiceManager, ServiceResult
 
 logger = logging.getLogger(__name__)
 
-PDNS_API_URL     = "http://127.0.0.1:8053/api/v1"
+# Allow overriding the PowerDNS API URL and key via environment variables.
+# In Docker Compose the backend container can reach the pdns container by
+# its service name "powerdns" on port 8053.
+PDNS_API_URL     = os.getenv("PDNS_API_URL", "http://127.0.0.1:8053/api/v1")
 PDNS_CONF_FILE   = "/etc/powerdns/pdns.conf"
 PDNS_SERVER_ID   = "localhost"
 DEFAULT_TTL      = 300
@@ -63,10 +67,12 @@ class DNSManager(BaseServiceManager):
         fqdn = self._ensure_dot(domain)
         admin = self._ensure_dot(admin_email.replace("@", ".")) if admin_email else f"hostmaster.{fqdn}"
 
+        # PowerDNS rejects mixing `nameservers` array with explicit NS rrsets.
+        # Use rrsets only (including SOA + NS) + empty nameservers list.
         payload: dict[str, Any] = {
             "name": fqdn,
             "kind": "Native",
-            "nameservers": [self._ensure_dot(ns1), self._ensure_dot(ns2)],
+            "nameservers": [],   # empty — we supply NS via rrsets below
             "rrsets": [
                 self._make_rrset(fqdn, "NS", DEFAULT_TTL, [
                     {"content": self._ensure_dot(ns1)},
@@ -204,6 +210,11 @@ class DNSManager(BaseServiceManager):
             return None
 
     def _read_api_key(self) -> str:
+        # 1. Prefer environment variable (set in docker-compose)
+        env_key = os.getenv("PDNS_API_KEY", "").strip()
+        if env_key:
+            return env_key
+        # 2. Fall back to pdns.conf file
         conf = Path(PDNS_CONF_FILE)
         if conf.exists():
             for line in conf.read_text().splitlines():

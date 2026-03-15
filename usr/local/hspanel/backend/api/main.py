@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import auth, domain, mysql, mail, dns, ssl, ftp, php, security, system, backup, cron
+from . import auth, domain, mysql, mail, dns, ssl, ftp, php, security, system, backup, cron, compat
 
 app = FastAPI(
     title="HS-Panel Backend API",
@@ -39,3 +39,4 @@ app.include_router(security.router)
 app.include_router(system.router)
 app.include_router(backup.router)
 app.include_router(cron.router)
+app.include_router(compat.router)

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 
 from .deps import require_api_token
-from ..service_manager import SSLManager
+from service_manager import SSLManager
 
 router = APIRouter(prefix="/api/ssl", tags=["ssl"], dependencies=[Depends(require_api_token)])
 

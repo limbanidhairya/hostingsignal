@@ -3,7 +3,7 @@
         <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white">Databases</h1>
         <p class="text-slate-500 dark:text-slate-400 mt-1">Manage MariaDB/MySQL databases and users</p>
     </div>
-    <a href="/phpmyadmin" target="_blank" class="px-4 py-2 bg-slate-800 text-white text-sm font-bold rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors flex items-center gap-2">
+    <a href="/software/phpmyadmin" target="_blank" class="px-4 py-2 bg-slate-800 text-white text-sm font-bold rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors flex items-center gap-2">
         <span class="material-symbols-outlined">database</span> phpMyAdmin
     </a>
 </div>
@@ -42,9 +42,12 @@
                         <td class="px-6 py-3 font-mono font-bold text-slate-200"><TMPL_VAR NAME=name></td>
                         <td class="px-6 py-3"><span class="px-2 py-1 rounded bg-slate-700/50 border border-slate-600 font-mono text-xs"><TMPL_VAR NAME=size_mb> MB</span></td>
                         <td class="px-6 py-3 text-right">
-                            <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
-                                <span class="material-symbols-outlined text-[18px]">delete</span>
-                            </button>
+                            <form method="POST" action="/api/database/delete" class="inline-block" onsubmit="return confirm('Delete database <TMPL_VAR NAME=name>?');">
+                                <input type="hidden" name="name" value="<TMPL_VAR NAME=name>">
+                                <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
+                                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     </TMPL_LOOP>
@@ -88,12 +91,15 @@
                         <td class="px-6 py-3 font-mono font-bold text-slate-200"><TMPL_VAR NAME=username></td>
                         <td class="px-6 py-3"><span class="px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 font-mono text-[11px]"><TMPL_VAR NAME=databases></span></td>
                         <td class="px-6 py-3 text-right space-x-2">
-                            <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Change Password">
+                            <button type="button" onclick="changeDbUserPassword('<TMPL_VAR NAME=username>')" class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Change Password">
                                 <span class="material-symbols-outlined text-[18px]">key</span>
                             </button>
-                            <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
-                                <span class="material-symbols-outlined text-[18px]">delete</span>
-                            </button>
+                            <form method="POST" action="/api/database/delete_user" class="inline-block" onsubmit="return confirm('Delete database user <TMPL_VAR NAME=username>?');">
+                                <input type="hidden" name="username" value="<TMPL_VAR NAME=username>">
+                                <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
+                                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     </TMPL_LOOP>
@@ -102,3 +108,18 @@
         </div>
     </div>
 </div>
+
+<form id="dbUserPasswordForm" method="POST" action="/api/database/change_user_password" class="hidden">
+    <input type="hidden" id="dbUserPasswordUsername" name="username" value="">
+    <input type="hidden" id="dbUserPasswordValue" name="password" value="">
+</form>
+
+<script>
+function changeDbUserPassword(username) {
+    const password = prompt(`Set a new password for ${username}:`);
+    if (!password) return;
+    document.getElementById('dbUserPasswordUsername').value = username;
+    document.getElementById('dbUserPasswordValue').value = password;
+    document.getElementById('dbUserPasswordForm').submit();
+}
+</script>

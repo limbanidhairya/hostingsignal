@@ -1,34 +1,20 @@
 'use client';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const API_BASE = process.env.NEXT_PUBLIC_HSDEV_API_BASE || "/devapi";
-
-const resolveApiBases = () => {
-    const bases = [API_BASE];
-    if (typeof window !== "undefined") {
-        bases.push(`${window.location.protocol}//${window.location.hostname}:2087`);
+const persistToken = (token) => {
+    try {
+        localStorage.setItem('hsdev_token', token);
+    } catch {
+        // Ignore storage write issues.
     }
-    return [...new Set(bases)];
 };
 
-const requestWithFallback = async (path, init = {}) => {
-    const bases = resolveApiBases();
-    let lastError = null;
-    for (const base of bases) {
-        try {
-            const res = await fetch(`${base}${path}`, init);
-            const shouldRetry = [404, 405, 502, 503, 504].includes(res.status);
-            if (shouldRetry) {
-                lastError = new Error(`HTTP ${res.status} from ${base}`);
-                continue;
-            }
-            return { res, base };
-        } catch (err) {
-            lastError = err;
-        }
+const clearStoredToken = () => {
+    try {
+        localStorage.removeItem('hsdev_token');
+    } catch {
+        // ignore
     }
-    throw lastError || new Error("API unavailable");
 };
 
 export default function LoginPage() {
@@ -39,25 +25,20 @@ export default function LoginPage() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        const token = localStorage.getItem("hsdev_token");
-        if (!token) return;
-
-        const validateSession = async () => {
+        const validateExistingSession = async () => {
             try {
-                const { res: meRes } = await requestWithFallback(`/api/auth/me`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (meRes.ok) {
-                    router.replace("/");
+                const res = await fetch('/api/session/me', { cache: 'no-store' });
+                if (!res.ok) {
+                    clearStoredToken();
                     return;
                 }
-                localStorage.removeItem("hsdev_token");
+                router.replace('/');
             } catch {
-                // Keep token to allow retry when API is temporarily unavailable.
+                // Keep user on login page when session check cannot be confirmed.
             }
         };
 
-        validateSession();
+        validateExistingSession();
     }, [router]);
 
     const handleLogin = async (e) => {
@@ -66,27 +47,30 @@ export default function LoginPage() {
         setError("");
 
         try {
-            const { res: response, base } = await requestWithFallback(`/api/auth/login`, {
+            const response = await fetch('/api/session/login', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
             });
 
             const payload = await response.json();
-            if (!response.ok || !payload.access_token) {
+            if (!response.ok) {
                 throw new Error(payload.detail || "Login failed");
             }
 
-            localStorage.setItem("hsdev_token", payload.access_token);
-            const meRes = await fetch(`${base}/api/auth/me`, {
-                headers: { Authorization: `Bearer ${payload.access_token}` },
-            });
-            if (!meRes.ok) {
-                localStorage.removeItem("hsdev_token");
-                throw new Error("Session validation failed. Please try again.");
+            if (payload.access_token) {
+                persistToken(payload.access_token);
             }
-            router.replace("/");
+
+            const sessionCheck = await fetch('/api/session/me', { cache: 'no-store' });
+            if (!sessionCheck.ok) {
+                throw new Error('Session cookie was not established. Please try again.');
+            }
+
+            // Force a full navigation so middleware reads the fresh cookie deterministically.
+            window.location.assign('/');
         } catch (err) {
+            clearStoredToken();
             setError(err.message || "Unable to authenticate");
         } finally {
             setSubmitting(false);
@@ -94,31 +78,33 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="bg-[#0a1628] font-sans text-slate-100 min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="bg-[#061529] font-sans text-slate-100 min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
             {/* Background Grid Effect */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                    backgroundImage: `linear-gradient(rgba(0, 217, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 217, 255, 0.05) 1px, transparent 1px)`,
+                    backgroundImage: `linear-gradient(rgba(56, 189, 248, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px)`,
                     backgroundSize: '30px 30px'
                 }}
             ></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/50 via-transparent to-[#0a1628] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-background-dark/60 via-transparent to-background-dark pointer-events-none"></div>
 
             {/* Main Container */}
             <div className="relative flex h-full w-full max-w-[480px] flex-col px-6 py-8 z-10">
 
                 {/* Header / Logo Section */}
                 <div className="flex flex-col items-center mb-10">
-                    <div className="bg-[#00d9ff]/10 p-4 rounded-xl border border-[#00d9ff]/30 mb-4 shadow-[0_0_20px_rgba(0,217,255,0.15)] mt-[10vh]">
-                        <span className="material-symbols-outlined text-[#00d9ff] text-5xl" style={{ fontVariationSettings: "'FILL' 0, 'wght' 300" }}>
-                            shield_lock
-                        </span>
+                    <div className="bg-primary/10 p-4 rounded-xl border border-primary/30 mb-4 shadow-[0_0_22px_rgba(56,189,248,0.22)] mt-[8vh]">
+                        <img
+                            src="/branding/hostingsignal-logo.png"
+                            alt="HostingSignal"
+                            className="h-14 w-auto object-contain"
+                        />
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-                        HS-PANEL <span className="text-[#00d9ff] font-light">PARTNER</span>
+                        HOSTINGSIGNAL <span className="text-primary font-light">CONTROL</span>
                     </h1>
-                    <p className="text-slate-400 mt-2 text-sm uppercase tracking-[0.2em]">Developer Portal Access</p>
+                    <p className="text-slate-400 mt-2 text-sm uppercase tracking-[0.2em]">Operations Portal Access</p>
                 </div>
 
                 {/* Glass Login Card */}
@@ -170,12 +156,12 @@ export default function LoginPage() {
                                 <input className="rounded border-slate-700 bg-[#0a1628] text-[#00d9ff] focus:ring-[#00d9ff]/50" type="checkbox" />
                                 <span className="text-slate-400 group-hover:text-slate-200 transition-colors">Remember device</span>
                             </label>
-                            <a className="text-[#00d9ff] hover:text-[#00d9ff]/80 transition-colors font-medium" href="#">Forgot Password?</a>
+                            <a className="text-primary hover:text-primary/80 transition-colors font-medium" href="#">Forgot Password?</a>
                         </div>
 
                         {/* Submit Button */}
-                        <button disabled={submitting} className="w-full bg-gradient-to-r from-[#00d9ff] to-blue-600 hover:from-[#00d9ff]/90 hover:to-blue-600/90 disabled:opacity-60 disabled:cursor-not-allowed text-[#0a1628] font-bold py-4 rounded-lg shadow-lg shadow-[#00d9ff]/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]" type="submit">
-                            <span>{submitting ? 'Authenticating...' : 'Login to Partner Portal'}</span>
+                        <button disabled={submitting} className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 disabled:opacity-60 disabled:cursor-not-allowed text-background-dark font-bold py-4 rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]" type="submit">
+                            <span>{submitting ? 'Authenticating...' : 'Login to Control Panel'}</span>
                             <span className="material-symbols-outlined">arrow_forward</span>
                         </button>
                         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
@@ -184,10 +170,7 @@ export default function LoginPage() {
 
                 {/* Footer Actions */}
                 <div className="mt-8 text-center space-y-4">
-                    <p className="text-slate-400 text-sm">
-                        New developer?
-                        <a className="text-[#00d9ff] font-semibold hover:underline decoration-[#00d9ff]/30 underline-offset-4 ml-1" href="#">Apply for access</a>
-                    </p>
+                    <p className="text-slate-400 text-sm">Client license and purchase flows are managed in WHMCS.</p>
                     <div className="pt-6 flex justify-center gap-6">
                         <a className="text-slate-500 hover:text-slate-300 transition-colors" href="#">
                             <span className="material-symbols-outlined">help_outline</span>
@@ -209,15 +192,15 @@ export default function LoginPage() {
                             <span className="text-[10px] uppercase tracking-widest text-slate-500">API Status: Operational</span>
                         </div>
                         <div className="h-[20px] w-32 bg-slate-800/50 rounded overflow-hidden">
-                            <div className="h-full w-full bg-[#00d9ff]/20 border-r border-[#00d9ff]/50"></div>
+                            <div className="h-full w-full bg-primary/20 border-r border-primary/50"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Decorative background element */}
-            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#00d9ff]/5 rounded-full blur-[100px] pointer-events-none"></div>
-            <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none"></div>
+            <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+            <div className="absolute -top-24 -right-24 w-96 h-96 bg-accent/10 rounded-full blur-[100px] pointer-events-none"></div>
         </div>
     );
 }

@@ -2,7 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {}
+:root {
+    --hs-primary: #0ea5e9;
+    --hs-accent: #38bdf8;
+    --hs-bg-dark: #061529;
+    --hs-card-dark: #0d243d;
+    --hs-border-dark: #1f3a56;
+}
 
 * {
     margin: 0;
@@ -11,13 +17,13 @@
 }
 
 body {
-    background: #0a1628;
+    background: var(--hs-bg-dark);
 }
 
 .glass {
-    background: rgba(17, 34, 64, 0.7);
+    background: rgba(13, 36, 61, 0.72);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(29, 45, 80, 0.5);
+    border: 1px solid rgba(31, 58, 86, 0.55);
 }
 
 .material-symbols-outlined {

@@ -13,6 +13,29 @@ my $POSTFIX_DOMAINS   = "$POSTFIX_DIR/virtual_domains";
 my $DOVECOT_USERS     = "/etc/dovecot/users";
 my $WRAP_SYSOP        = "/usr/local/hspanel/bin/wrap_sysop";
 
+sub _run_first_success {
+    my (@commands) = @_;
+    for my $cmd (@commands) {
+        my $rc = system(@$cmd);
+        return 1 if $rc == 0;
+    }
+    return 0;
+}
+
+sub _reload_mail_services {
+    _run_first_success(
+        [$WRAP_SYSOP, 'reload_postfix'],
+        ['/bin/systemctl', 'reload', 'postfix'],
+        ['/bin/systemctl', 'restart', 'postfix'],
+    );
+
+    _run_first_success(
+        [$WRAP_SYSOP, 'reload_dovecot'],
+        ['/bin/systemctl', 'reload', 'dovecot'],
+        ['/bin/systemctl', 'restart', 'dovecot'],
+    );
+}
+
 sub _load_db {
     my $db = {};
     if (-f $MAIL_DB) {
@@ -78,10 +101,18 @@ sub _write_mail_files {
     print $u join("\n", @users) . "\n" if @users;
     close($u);
 
-    system('postmap', $POSTFIX_DOMAINS);
-    system('postmap', $POSTFIX_MAILBOXES);
-    system($WRAP_SYSOP, 'reload_postfix');
-    system($WRAP_SYSOP, 'reload_dovecot');
+    _run_first_success(
+        ['/usr/sbin/postmap', $POSTFIX_DOMAINS],
+        ['/sbin/postmap', $POSTFIX_DOMAINS],
+        ['postmap', $POSTFIX_DOMAINS],
+    );
+    _run_first_success(
+        ['/usr/sbin/postmap', $POSTFIX_MAILBOXES],
+        ['/sbin/postmap', $POSTFIX_MAILBOXES],
+        ['postmap', $POSTFIX_MAILBOXES],
+    );
+
+    _reload_mail_services();
 
     return 1;
 }

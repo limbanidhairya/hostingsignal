@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 
 from .deps import require_api_token
-from ..service_manager import FTPManager
+from service_manager import FTPManager
 
 router = APIRouter(prefix="/api/ftp", tags=["ftp"], dependencies=[Depends(require_api_token)])
 

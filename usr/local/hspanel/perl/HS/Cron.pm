@@ -52,6 +52,11 @@ sub list_jobs {
     return { success => 1, jobs => \@jobs, total => scalar @jobs };
 }
 
+sub add {
+    my ($class, %args) = @_;
+    return $class->create(%args);
+}
+
 sub create {
     my ($class, %args) = @_;
     my $command = $args{command} || return { success => 0, error => "Missing command" };

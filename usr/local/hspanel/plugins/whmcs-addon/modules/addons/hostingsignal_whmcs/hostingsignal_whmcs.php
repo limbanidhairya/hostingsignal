@@ -26,6 +26,13 @@ function hostingsignal_whmcs_config()
                 'Default' => '',
                 'Description' => 'Must match HSDEV_WHMCS_SHARED_SECRET',
             ],
+            'hmac_secret' => [
+                'FriendlyName' => 'HMAC Shared Secret (optional)',
+                'Type' => 'password',
+                'Size' => '60',
+                'Default' => '',
+                'Description' => 'Must match HSDEV_WHMCS_HMAC_SECRET when enabled',
+            ],
         ],
     ];
 }
@@ -184,21 +191,38 @@ function hostingsignal_whmcs_addon_call_api(array $vars, string $path, ?array $p
 {
     $baseUrl = rtrim((string)($vars['panel_api_url'] ?? 'http://127.0.0.1:2087'), '/');
     $token = (string)($vars['shared_token'] ?? '');
+    $hmacSecret = (string)($vars['hmac_secret'] ?? '');
     $url = $baseUrl . $path;
+    $method = strtoupper($method);
+    $bodyJson = $method === 'POST' ? json_encode($payload ?: []) : '';
+    $timestamp = (string)time();
+    $nonce = '';
 
     $headers = [
         'Content-Type: application/json',
         'X-HS-WHMCS-Token: ' . $token,
     ];
 
+    if ($hmacSecret !== '') {
+        try {
+            $nonce = bin2hex(random_bytes(8));
+        } catch (Exception $e) {
+            $nonce = md5((string)microtime(true));
+        }
+        $signature = hash_hmac('sha256', $timestamp . '.' . $bodyJson, $hmacSecret);
+        $headers[] = 'X-HS-WHMCS-Timestamp: ' . $timestamp;
+        $headers[] = 'X-HS-WHMCS-Signature: ' . $signature;
+        $headers[] = 'X-HS-WHMCS-Nonce: ' . $nonce;
+    }
+
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 20);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-    if (strtoupper($method) === 'POST') {
+    if ($method === 'POST') {
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload ?: []));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $bodyJson);
     } else {
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
     }

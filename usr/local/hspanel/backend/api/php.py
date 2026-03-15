@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 
 from .deps import require_api_token
-from ..service_manager import PHPManager
+from service_manager import PHPManager
 
 router = APIRouter(prefix="/api/php", tags=["php"], dependencies=[Depends(require_api_token)])
 

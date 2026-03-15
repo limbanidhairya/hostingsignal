@@ -145,9 +145,12 @@
                         <a href="/filemanager?dir=<TMPL_VAR NAME=docroot>" class="inline-flex items-center justify-center w-8 h-8 rounded bg-slate-800/50 hover:bg-slate-700 text-slate-300 transition-colors" title="Files">
                             <span class="material-symbols-outlined text-[18px]">folder</span>
                         </a>
-                        <button class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
-                            <span class="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
+                        <form method="POST" action="/api/domain/delete" class="inline-block" onsubmit="return confirm('Delete domain <TMPL_VAR NAME=domain>?');">
+                            <input type="hidden" name="domain" value="<TMPL_VAR NAME=domain>">
+                            <button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors" title="Delete">
+                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 </TMPL_LOOP>

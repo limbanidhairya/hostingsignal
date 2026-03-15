@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException
 
 from .deps import require_api_token
-from ..service_manager import MailManager
+from service_manager import MailManager
 
 router = APIRouter(prefix="/api/mail", tags=["mail"], dependencies=[Depends(require_api_token)])
 

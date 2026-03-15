@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 
 from .deps import require_api_token
-from ..service_manager import WebServerManager, DatabaseManager, MailManager, DNSManager, FTPManager
+from service_manager import WebServerManager, DatabaseManager, MailManager, DNSManager, FTPManager
 
 router = APIRouter(prefix="/api/system", tags=["system"], dependencies=[Depends(require_api_token)])
 

@@ -51,3 +51,22 @@ venv.bak/
 *.njsproj
 *.sln
 *.sw?
+
+# Local service sandbox runtime
+/data/
+/runtime/
+/logs/local-services/
+/services/*/data/
+/services/*/logs/
+/services/*/config/generated/
+
+# Generated runtime artifacts
+/developer-panel/hostingsignal_dev.db
+/developer-panel/tmp_check_admin.py
+/reports/
+/logs/recovery/
+/deployment/*.log
+/deployment/*logs*.txt
+/deployment/out.txt
+/deployment/build.log
+/deployment/hostingsignal-devapi.production.env

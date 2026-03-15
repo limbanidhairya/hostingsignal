@@ -15,12 +15,12 @@
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#07b6d5",
-                        "accent": "#00d4ff",
+                        "primary": "#0ea5e9",
+                        "accent": "#38bdf8",
                         "background-light": "#f5f8f8",
-                        "background-dark": "#0f172a",
-                        "card-dark": "#1e293b",
-                        "border-dark": "#334155"
+                        "background-dark": "#061529",
+                        "card-dark": "#0d243d",
+                        "border-dark": "#1f3a56"
                     },
                     fontFamily: {
                         "display": ["Inter", "sans-serif"]
@@ -49,13 +49,16 @@
 </head>
 <body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
 
-<header class="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white/50 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
-    <div class="flex items-center gap-8">
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-3 sm:px-4 lg:px-6 bg-white/50 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="flex items-center gap-2 sm:gap-4 lg:gap-8 min-w-0">
+        <button class="inline-flex lg:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800" id="hs-mobile-nav-btn" type="button" aria-label="Open menu">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
         <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
-                <span class="material-symbols-outlined text-xl">rocket_launch</span>
+            <div class="w-10 h-10 bg-primary/10 rounded-lg border border-primary/30 flex items-center justify-center text-white">
+                <img src="/assets/hostingsignal-logo.png" alt="HostingSignal" class="h-6 w-auto object-contain"/>
             </div>
-            <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">HS-Panel</h1>
+            <h1 class="text-sm sm:text-lg lg:text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate">HostingSignal</h1>
         </div>
         <div class="hidden md:flex items-center gap-2">
             <div class="relative">
@@ -67,30 +70,78 @@
         </div>
     </div>
     
-    <div class="flex items-center gap-4">
-        <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 gap-2 border border-slate-200 dark:border-slate-700">
+    <div class="flex items-center gap-1 sm:gap-3 lg:gap-4 shrink-0">
+        <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 gap-2 border border-slate-200 dark:border-slate-700" id="hs-search-wrap">
             <span class="material-symbols-outlined text-primary text-lg">search</span>
-            <input class="bg-transparent border-none focus:ring-0 p-0 text-sm placeholder:text-slate-500 w-48 text-slate-200 outline-none" placeholder="Search features..." type="text"/>
+            <input class="bg-transparent border-none focus:ring-0 p-0 text-sm placeholder:text-slate-500 w-48 text-slate-200 outline-none" id="hs-search-input" placeholder="Search features..." type="text"/>
         </div>
-        <button class="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-            <span class="material-symbols-outlined">notifications</span>
-            <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
-        </button>
-        <div class="h-8 w-[1px] bg-slate-200 dark:border-slate-800 mx-1"></div>
-        <div class="flex items-center gap-3 pl-2 cursor-pointer hover:opacity-80">
-            <div class="text-right hidden sm:block">
-                <p class="text-xs font-bold text-slate-900 dark:text-white leading-none"><TMPL_VAR NAME=user></p>
-                <p class="text-[10px] text-slate-500 font-medium mt-1">PRO PLAN</p>
-            </div>
-            <div class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-primary/20 overflow-hidden flex items-center justify-center font-bold text-slate-400">
-                <TMPL_VAR NAME=user_initial>
+        <div class="relative">
+            <button class="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" id="hs-notification-btn" type="button">
+                <span class="material-symbols-outlined">notifications</span>
+                <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
+            </button>
+            <div class="hidden absolute right-0 mt-2 w-72 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl z-50" id="hs-notification-panel">
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+                    <p class="text-sm font-bold text-slate-900 dark:text-white">Notifications</p>
+                </div>
+                <div class="max-h-72 overflow-y-auto custom-scrollbar">
+                    <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">System metrics refreshed</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Latest usage data is now available.</p>
+                    </div>
+                    <div class="px-4 py-3">
+                        <p class="text-xs font-semibold text-slate-700 dark:text-slate-200">No critical alerts</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Your services are running normally.</p>
+                    </div>
+                </div>
             </div>
         </div>
-        <a href="/logout" class="p-2 text-slate-500 hover:text-red-500 rounded-lg transition-colors" title="Logout">
+        <div class="h-8 w-[1px] bg-slate-200 dark:border-slate-800 mx-1 hidden sm:block"></div>
+        <div class="relative">
+            <button class="flex items-center gap-3 pl-2 cursor-pointer hover:opacity-80" id="hs-user-btn" type="button">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-bold text-slate-900 dark:text-white leading-none"><TMPL_VAR NAME=user></p>
+                    <p class="text-[10px] text-slate-500 font-medium mt-1">PRO PLAN</p>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-primary/20 overflow-hidden flex items-center justify-center font-bold text-slate-400">
+                    <TMPL_VAR NAME=user_initial>
+                </div>
+            </button>
+            <div class="hidden absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl z-50" id="hs-user-menu">
+                <a class="block px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" href="/settings">Account Settings</a>
+                <a class="block px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" href="/metrics">System Metrics</a>
+                <a class="block px-4 py-3 text-sm text-red-500 hover:bg-red-500/10" href="/logout">Logout</a>
+            </div>
+        </div>
+        <a href="/logout" class="p-2 text-slate-500 hover:text-red-500 rounded-lg transition-colors hidden sm:inline-flex" title="Logout">
             <span class="material-symbols-outlined">logout</span>
         </a>
     </div>
 </header>
+
+<div class="hidden fixed inset-0 bg-slate-950/60 z-40 lg:hidden" id="hs-mobile-nav-overlay"></div>
+<aside class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-background-dark border-r border-slate-200 dark:border-slate-800 p-5 custom-scrollbar overflow-y-auto transform -translate-x-full transition-transform duration-200 lg:hidden" id="hs-mobile-nav">
+    <div class="flex items-center justify-between mb-4">
+        <p class="text-sm font-bold uppercase tracking-widest text-slate-500">Navigation</p>
+        <button class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-slate-800" id="hs-mobile-nav-close" type="button" aria-label="Close menu">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+    </div>
+    <nav class="flex flex-col space-y-1">
+        <a class="sidebar-item <TMPL_IF NAME=is_dashboard>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/dashboard"><span class="material-symbols-outlined text-[22px]">grid_view</span>Dashboard</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_domains>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/domains"><span class="material-symbols-outlined text-[22px]">language</span>Domains</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_email>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/email"><span class="material-symbols-outlined text-[22px]">mail</span>Email</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_databases>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/databases"><span class="material-symbols-outlined text-[22px]">database</span>Databases</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_filemanager>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/filemanager"><span class="material-symbols-outlined text-[22px]">folder_open</span>File Manager</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_dns>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/dns_editor"><span class="material-symbols-outlined text-[22px]">dns</span>DNS</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_backups>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/backups"><span class="material-symbols-outlined text-[22px]">history</span>Backups</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_ssl>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/ssl"><span class="material-symbols-outlined text-[22px]">verified_user</span>SSL</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_cron>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/cron"><span class="material-symbols-outlined text-[22px]">schedule</span>Cron</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_metrics>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/metrics"><span class="material-symbols-outlined text-[22px]">query_stats</span>Metrics</a>
+        <a class="sidebar-item <TMPL_IF NAME=is_settings>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400" href="/settings"><span class="material-symbols-outlined text-[22px]">settings</span>Settings</a>
+        <a class="sidebar-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-500" href="/logout"><span class="material-symbols-outlined text-[22px]">logout</span>Logout</a>
+    </nav>
+</aside>
 
 <div class="flex flex-1 overflow-hidden">
     <aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark hidden lg:flex flex-col py-6 custom-scrollbar overflow-y-auto">
@@ -122,7 +173,7 @@
                 File Manager
             </a>
             
-            <a class="sidebar-item <TMPL_IF NAME=is_dns>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" href="/dns">
+            <a class="sidebar-item <TMPL_IF NAME=is_dns>sidebar-item-active</TMPL_IF> flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" href="/dns_editor">
                 <span class="material-symbols-outlined text-[22px]">dns</span>
                 DNS Management
             </a>
@@ -164,21 +215,155 @@
         </div>
     </aside>
     
-    <main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-6 md:p-10 custom-scrollbar">
+    <main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-4 sm:p-6 md:p-10 custom-scrollbar">
         <div class="max-w-7xl mx-auto space-y-8">
             <TMPL_VAR NAME=content>
             
             <footer class="pt-8 pb-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4 mt-12">
                 <p class="text-xs text-slate-500 font-medium">© 2026 HS-Panel. All systems operational.</p>
-                <div class="flex gap-6">
-                    <a class="text-xs text-slate-500 hover:text-primary transition-colors font-bold uppercase tracking-tight" href="#">System Status</a>
-                    <a class="text-xs text-slate-500 hover:text-primary transition-colors font-bold uppercase tracking-tight" href="#">API Docs</a>
-                    <a class="text-xs text-slate-500 hover:text-primary transition-colors font-bold uppercase tracking-tight" href="#">Help Center</a>
+                <div class="flex gap-4 sm:gap-6 flex-wrap justify-center">
+                    <a class="text-xs text-slate-500 hover:text-primary transition-colors font-bold uppercase tracking-tight" href="/metrics">System Status</a>
+                    <a class="text-xs text-slate-500 hover:text-primary transition-colors font-bold uppercase tracking-tight" href="/settings">Settings</a>
+                    <a class="text-xs text-slate-500 hover:text-primary transition-colors font-bold uppercase tracking-tight" href="/dashboard">Dashboard</a>
                 </div>
             </footer>
         </div>
     </main>
 </div>
+
+<script>
+(() => {
+    const q = (id) => document.getElementById(id);
+    const searchInput = q('hs-search-input');
+    const searchWrap = q('hs-search-wrap');
+    const notifyBtn = q('hs-notification-btn');
+    const notifyPanel = q('hs-notification-panel');
+    const userBtn = q('hs-user-btn');
+    const userMenu = q('hs-user-menu');
+    const mobileNavBtn = q('hs-mobile-nav-btn');
+    const mobileNavClose = q('hs-mobile-nav-close');
+    const mobileNav = q('hs-mobile-nav');
+    const mobileNavOverlay = q('hs-mobile-nav-overlay');
+
+    function closeFloatingPanels() {
+        if (notifyPanel) notifyPanel.classList.add('hidden');
+        if (userMenu) userMenu.classList.add('hidden');
+    }
+
+    function closeMobileNav() {
+        if (mobileNav) mobileNav.classList.add('-translate-x-full');
+        if (mobileNavOverlay) mobileNavOverlay.classList.add('hidden');
+        if (document && document.body) {
+            document.body.classList.remove('overflow-hidden');
+        }
+    }
+
+    function openMobileNav() {
+        if (mobileNav) mobileNav.classList.remove('-translate-x-full');
+        if (mobileNavOverlay) mobileNavOverlay.classList.remove('hidden');
+        if (document && document.body) {
+            document.body.classList.add('overflow-hidden');
+        }
+    }
+
+    function isTypingContext(target) {
+        if (!target) return false;
+        const tag = (target.tagName || '').toLowerCase();
+        if (['input', 'textarea', 'select'].includes(tag)) return true;
+        if (target.isContentEditable) return true;
+        return false;
+    }
+
+    if (notifyBtn && notifyPanel) {
+        notifyBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const opening = notifyPanel.classList.contains('hidden');
+            closeFloatingPanels();
+            if (opening) notifyPanel.classList.remove('hidden');
+        });
+    }
+
+    if (userBtn && userMenu) {
+        userBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const opening = userMenu.classList.contains('hidden');
+            closeFloatingPanels();
+            if (opening) userMenu.classList.remove('hidden');
+        });
+    }
+
+    if (mobileNavBtn) {
+        mobileNavBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            openMobileNav();
+        });
+    }
+
+    if (mobileNavClose) {
+        mobileNavClose.addEventListener('click', () => {
+            closeMobileNav();
+        });
+    }
+
+    if (mobileNavOverlay) {
+        mobileNavOverlay.addEventListener('click', () => {
+            closeMobileNav();
+        });
+    }
+
+    if (mobileNav) {
+        mobileNav.querySelectorAll('a').forEach((link) => {
+            link.addEventListener('click', () => closeMobileNav());
+        });
+    }
+
+    if (searchInput) {
+        const searchableLinks = Array.from(document.querySelectorAll('aside nav a.sidebar-item'));
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter') return;
+            const term = (searchInput.value || '').trim().toLowerCase();
+            if (!term) return;
+            const match = searchableLinks.find((link) => (link.textContent || '').toLowerCase().includes(term));
+            if (match) {
+                window.location.href = match.getAttribute('href');
+            } else if (searchWrap) {
+                searchWrap.classList.add('ring-2', 'ring-red-500/60');
+                setTimeout(() => searchWrap.classList.remove('ring-2', 'ring-red-500/60'), 900);
+            }
+        });
+    }
+
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!target) return;
+        if (notifyPanel && notifyBtn && !notifyPanel.contains(target) && !notifyBtn.contains(target)) {
+            notifyPanel.classList.add('hidden');
+        }
+        if (userMenu && userBtn && !userMenu.contains(target) && !userBtn.contains(target)) {
+            userMenu.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeFloatingPanels();
+            closeMobileNav();
+            if (searchInput && document.activeElement === searchInput) {
+                searchInput.blur();
+            }
+            return;
+        }
+
+        if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            if (isTypingContext(event.target)) return;
+            if (!searchInput) return;
+            event.preventDefault();
+            searchInput.focus();
+            searchInput.select();
+        }
+    });
+})();
+</script>
 
 </body>
 </html>

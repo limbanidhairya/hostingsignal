@@ -3,6 +3,8 @@ package HS::Database;
 use strict;
 use warnings;
 use JSON;
+use IPC::Open3;
+use Symbol qw(gensym);
 
 my $DB_REGISTRY = "/var/hspanel/conf/databases.json";
 my $MYSQL_SOCKET = "/var/run/mysqld/mysqld.sock";
@@ -115,8 +117,10 @@ sub list_users {
 
     my @users;
     for my $line (split(/\n/, $out)) {
-        next if $line =~ /^User\s+/;
-        my ($user, $host) = split(/\s+/, $line, 2);
+        my ($user, $host) = split(/\t/, $line, 2);
+        if (!defined $host) {
+            ($user, $host) = split(/\s+/, $line, 2);
+        }
         next if !$user;
         next if $user =~ /^(mysql|root|mariadb\.sys|debian-sys-maint)$/;
         push @users, {
@@ -164,12 +168,67 @@ sub create_user {
     return { success => 1, message => "Database user '$username' created.", username => $username };
 }
 
+sub delete_user {
+    my ($class, %args) = @_;
+    my $username = $args{username} || return { success => 0, error => "Missing username" };
+
+    return { success => 0, error => "Invalid username" }
+        unless $username =~ /^[a-zA-Z0-9_]{1,64}$/;
+
+    my ($rc, $out, $err) = _run_mysql("DROP USER IF EXISTS '$username'\@'localhost'; FLUSH PRIVILEGES;");
+    return { success => 0, error => "Failed to delete DB user: $err" } if $rc != 0;
+
+    my $reg = _load_db();
+    $reg->{users} ||= {};
+    delete $reg->{users}{$username};
+    _save_db($reg);
+
+    return { success => 1, message => "Database user '$username' deleted.", username => $username };
+}
+
+sub change_user_password {
+    my ($class, %args) = @_;
+    my $username = $args{username} || return { success => 0, error => "Missing username" };
+    my $password = $args{password} || return { success => 0, error => "Missing password" };
+
+    return { success => 0, error => "Invalid username" }
+        unless $username =~ /^[a-zA-Z0-9_]{1,64}$/;
+
+    my $escaped = $password;
+    $escaped =~ s/\\/\\\\/g;
+    $escaped =~ s/'/\\'/g;
+
+    my ($rc, $out, $err) = _run_mysql("ALTER USER '$username'\@'localhost' IDENTIFIED BY '$escaped'; FLUSH PRIVILEGES;");
+    return { success => 0, error => "Failed to change DB user password: $err" } if $rc != 0;
+
+    return { success => 1, message => "Password changed for database user '$username'.", username => $username };
+}
+
 sub _run_mysql {
     my ($sql) = @_;
-    my $cmd = "mysql --socket $MYSQL_SOCKET -u root -e \"$sql\" 2>&1";
-    my $out = `$cmd`;
+    my @cmd = (
+        'mysql',
+        '--protocol=socket',
+        '--socket', $MYSQL_SOCKET,
+        '-u', 'root',
+        '--batch',
+        '--raw',
+        '--skip-column-names',
+        '-e', $sql,
+    );
+
+    my $stderr = gensym;
+    my $pid = open3(my $stdin, my $stdout_fh, $stderr, @cmd);
+    close $stdin;
+
+    my $stdout = do { local $/; <$stdout_fh> // '' };
+    my $errout = do { local $/; <$stderr> // '' };
+
+    waitpid($pid, 0);
     my $rc = $? >> 8;
-    return ($rc, $out, $out);
+    my $msg = $errout ne '' ? $errout : $stdout;
+
+    return ($rc, $stdout, $msg);
 }
 
 1;

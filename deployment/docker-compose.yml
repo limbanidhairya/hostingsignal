@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ── PostgreSQL ──────────────────────────────────────────
   postgres:
@@ -86,6 +84,14 @@ services:
       DATABASE_URL: sqlite+aiosqlite:///./hostingsignal.db
       REDIS_URL: redis://redis:6379/1
       HS_PANEL_API_TOKEN: ${HS_PANEL_API_TOKEN:-change-me}
+      # MySQL TCP connection — points to the local MariaDB container via host bridge
+      MYSQL_HOST: ${MYSQL_HOST:-host.docker.internal}
+      MYSQL_PORT: ${MYSQL_PORT:-3309}
+      MYSQL_ROOT_USER: ${MYSQL_ROOT_USER:-root}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
+      # PowerDNS — internal Docker Compose service name (default webserver port 8081)
+      PDNS_API_URL: http://powerdns:8081/api/v1
+      PDNS_API_KEY: ${PDNS_API_KEY:-hs-pdns-key}
     ports:
       - "2083:2083"
     volumes:
@@ -97,17 +103,95 @@ services:
     build:
       context: ../developer-panel/web
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_HSPANEL_API_TOKEN: ${HS_PANEL_API_TOKEN:-change-me}
     container_name: hs-frontend
     restart: unless-stopped
     depends_on:
       - backend
+      - devpanel-api
     environment:
       NEXT_PUBLIC_API_URL: http://backend:2083
+      HSDEV_INTERNAL_API_BASE: http://devpanel-api:2087
+      HSPANEL_INTERNAL_API_BASE: http://backend:2083
+      NEXT_PUBLIC_HSPANEL_API_TOKEN: ${HS_PANEL_API_TOKEN:-change-me}
     ports:
       - "3000:3000"
+
+  # ── Developer Panel Auth/Data API ─────────────────────
+  devpanel-api:
+    build:
+      context: ../developer-panel
+      dockerfile: Dockerfile
+    container_name: hs-devpanel-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      license-server:
+        condition: service_started
+    env_file:
+      - ./hostingsignal-devapi.production.env
+    environment:
+      HSDEV_HOST: 0.0.0.0
+      HSDEV_PORT: 2087
+      HSDEV_LICENSE_SERVER_URL: http://license-server:8443
+      HSDEV_LICENSE_API_KEY: ${MASTER_API_KEY:-hs-master-key}
+      HSDEV_AUTO_REGISTER_LOCAL_SERVER: "true"
+      HSDEV_LOCAL_SERVER_HOSTNAME: hs-backend
+      HSDEV_LOCAL_SERVER_ADDRESS: backend
+      HSDEV_LOCAL_SERVER_PORT: 2083
+      HSDEV_LOCAL_SERVER_REGION: Local Installation
+      HSDEV_LOCAL_SERVER_OS_INFO: Docker Compose Panel Node
+    command: >-
+      sh -lc "mkdir -p /app/runtime/plugins /app/runtime/updates &&
+      touch /app/runtime/license.cache &&
+      exec uvicorn api.main:app --host 0.0.0.0 --port 2087"
+    ports:
+      - "2087:2087"
+    volumes:
+      - devpanel_runtime:/app/runtime
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # ── User Panel (Perl HTTP daemon, port 2086) ───────────
+  hs-daemon:
+    build:
+      context: ../usr/local/hspanel
+      dockerfile: daemon/Dockerfile
+    container_name: hs-panel-daemon
+    restart: unless-stopped
+    volumes:
+      - hspanel_var:/var/hspanel
+    ports:
+      - "2086:2086"
+
+  # ── PowerDNS (Authoritative DNS) ───────────────────────
+  # Used by the panel backend's DNSManager to manage zones/records.
+  powerdns:
+    image: powerdns/pdns-auth-49:latest
+    container_name: hs-powerdns
+    restart: unless-stopped
+    environment:
+      PDNS_AUTH_API_KEY: ${PDNS_API_KEY:-hs-pdns-key}
+      PDNS_AUTH_WEBSERVER: "yes"
+      PDNS_AUTH_WEBSERVER_ADDRESS: "0.0.0.0"
+      PDNS_AUTH_WEBSERVER_PORT: "8053"
+      PDNS_AUTH_WEBSERVER_ALLOW_FROM: "0.0.0.0/0"
+      PDNS_AUTH_API: "yes"
+      PDNS_AUTH_LAUNCH: "gsqlite3"
+      PDNS_AUTH_GSQLITE3_DATABASE: "/var/lib/powerdns/pdns.sqlite3"
+    ports:
+      - "8053:8053"
+      - "5300:53/udp"
+      - "5300:53/tcp"
+    volumes:
+      - pdns_data:/var/lib/powerdns
 
 volumes:
   pg_data:
   redis_data:
   rabbitmq_data:
   backend_data:
+  pdns_data:
+  hspanel_var:
+  devpanel_runtime:

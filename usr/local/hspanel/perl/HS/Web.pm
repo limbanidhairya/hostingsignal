@@ -151,7 +151,21 @@ sub set_php_version {
 
 sub _reload_lsws {
     my $rc = system($WRAP_SYSOP, 'reload_lsws');
-    return { success => 0, error => 'Failed to reload OpenLiteSpeed' } if $rc != 0;
+    if ($rc != 0) {
+        my @fallback_commands = (
+            ['/usr/local/lsws/bin/lswsctrl', 'restart'],
+            ['/bin/systemctl', 'reload', 'lsws'],
+            ['/bin/systemctl', 'restart', 'lshttpd'],
+            ['/bin/systemctl', 'restart', 'openlitespeed'],
+        );
+
+        for my $cmd (@fallback_commands) {
+            my $fallback_rc = system(@$cmd);
+            return { success => 1 } if $fallback_rc == 0;
+        }
+
+        return { success => 0, error => 'Failed to reload OpenLiteSpeed' };
+    }
     return { success => 1 };
 }
 

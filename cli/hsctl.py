@@ -12,6 +12,7 @@ import subprocess
 import sys
 import os
 import json
+import shlex
 import time
 from datetime import datetime
 
@@ -19,7 +20,7 @@ from datetime import datetime
 INSTALL_DIR = "/usr/local/hostingsignal"
 CONFIG_DIR = "/etc/hostingsignal"
 LOG_DIR = "/var/log/hostingsignal"
-API_URL = "http://localhost:8080"
+API_URL = os.getenv("HSCTL_API_URL", "http://localhost:2087")
 PLUGIN_DIR = f"{INSTALL_DIR}/plugins"
 PHP_MANAGER = f"{INSTALL_DIR}/backend/app/services/php_manager.sh"
 
@@ -64,6 +65,50 @@ def api_req(method, path, data=None):
 def cli():
     """HostingSignal Panel Control CLI"""
     pass
+
+
+@cli.group()
+def service():
+    """cPanel-style service orchestration commands."""
+    pass
+
+
+@service.command("start")
+@click.argument("name")
+def service_start(name):
+    """Start a specific service."""
+    click.echo(f"  Starting {name}...", nl=False)
+    r = run_cmd(f"systemctl start {name}")
+    click.echo(c(" ✓", "green") if r and r.returncode == 0 else c(" ✗", "red"))
+
+
+@service.command("stop")
+@click.argument("name")
+def service_stop(name):
+    """Stop a specific service."""
+    click.echo(f"  Stopping {name}...", nl=False)
+    r = run_cmd(f"systemctl stop {name}")
+    click.echo(c(" ✓", "green") if r and r.returncode == 0 else c(" ✗", "red"))
+
+
+@service.command("restart")
+@click.argument("name")
+def service_restart(name):
+    """Restart a specific service."""
+    click.echo(f"  Restarting {name}...", nl=False)
+    r = run_cmd(f"systemctl restart {name}")
+    click.echo(c(" ✓", "green") if r and r.returncode == 0 else c(" ✗", "red"))
+
+
+@service.command("status")
+@click.argument("name", required=False)
+def service_status(name):
+    """Show status for one service or the full managed list."""
+    targets = [name] if name else SERVICES
+    for svc in targets:
+        state = svc_status(svc)
+        icon = c("●", "green") if state == "active" else c("●", "red")
+        click.echo(f"  {icon} {svc}: {state}")
 
 # ── Status ───────────────────────────────────────────────────────────────────
 @cli.command()
@@ -325,6 +370,187 @@ def cluster_status():
         click.echo(f"  Masters: {result.get('masters', 0)}, Workers: {result.get('workers', 0)}")
     else:
         click.echo(c("  Not part of a cluster", "yellow"))
+
+
+@cli.group()
+def dns():
+    """Manage DNS cluster utilities."""
+    pass
+
+
+@dns.command("status")
+def dns_status():
+    """Show DNS cluster status from local config."""
+    script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "core", "dns-cluster", "sync.sh")
+    r = run_cmd(f"bash {shlex.quote(script)} status")
+    if r and r.returncode == 0:
+        click.echo(r.stdout)
+    else:
+        click.echo(c(f"  ✗ DNS status failed: {(r.stderr if r else 'command error')}", "red"))
+
+
+@dns.command("sync")
+@click.option("--zone", default="example.com")
+def dns_sync(zone):
+    """Trigger DNS sync verification flow."""
+    script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "core", "dns-cluster", "sync.sh")
+    r = run_cmd(f"bash {shlex.quote(script)} sync {shlex.quote(zone)}")
+    if r and r.returncode == 0:
+        click.echo(r.stdout)
+    else:
+        click.echo(c(f"  ✗ DNS sync failed: {(r.stderr if r else 'command error')}", "red"))
+
+
+@dns.command("verify")
+@click.option("--zone", default="example.com")
+def dns_verify(zone):
+    """Verify slave replication against master SOA serial."""
+    script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "core", "dns-cluster", "sync.sh")
+    r = run_cmd(f"bash {shlex.quote(script)} verify {shlex.quote(zone)}")
+    if r and r.returncode == 0:
+        click.echo(r.stdout)
+    else:
+        click.echo(c(f"  ✗ DNS replication verification failed: {(r.stderr if r else 'command error')}", "red"))
+
+
+@cli.group("recovery")
+def recovery_group():
+    """Auto-recovery manager operations."""
+    pass
+
+
+@recovery_group.command("run-once")
+def recovery_run_once():
+    """Run one recovery health-check cycle."""
+    script = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "core",
+        "recovery-manager",
+        "recovery_manager.py",
+    )
+    r = run_cmd(f"{shlex.quote(sys.executable)} {shlex.quote(script)} --once --verbose", timeout=120)
+    if r and r.returncode == 0:
+        click.echo(r.stdout)
+    else:
+        click.echo(c(f"  ✗ Recovery run failed: {(r.stderr if r else 'command error')}", "red"))
+
+
+@recovery_group.command("status")
+def recovery_status():
+    """Show current recovery state file."""
+    state_file = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "logs",
+        "recovery",
+        "state.json",
+    )
+    if not os.path.exists(state_file):
+        click.echo(c("  No recovery state file yet. Run 'hsctl recovery run-once' first.", "yellow"))
+        return
+    with open(state_file, "r", encoding="utf-8") as handle:
+        click.echo(handle.read())
+
+
+@cli.group("container")
+def container_group():
+    """Manage Docker/Podman containers through core container runner."""
+    pass
+
+
+def _container_runner_script() -> str:
+    return os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "core",
+        "container-runner",
+        "container_runner.py",
+    )
+
+
+def _run_container_cmd(args: list[str], timeout: int = 60):
+    script = _container_runner_script()
+    cmd = f"{shlex.quote(sys.executable)} {shlex.quote(script)} {' '.join(args)}"
+    result = run_cmd(cmd, timeout=timeout)
+    if not result:
+        click.echo(c("  ✗ container runner execution failed", "red"))
+        return None
+    if result.stdout:
+        click.echo(result.stdout)
+    if result.returncode != 0 and result.stderr:
+        click.echo(c(result.stderr, "red"))
+    return result
+
+
+@container_group.command("status")
+def container_status():
+    """Show container runtime availability."""
+    _run_container_cmd(["status"])
+
+
+@container_group.command("list")
+@click.option("--running-only", is_flag=True)
+def container_list(running_only):
+    """List containers."""
+    args = ["list"]
+    if running_only:
+        args.append("--running-only")
+    _run_container_cmd(args)
+
+
+@container_group.command("start")
+@click.argument("name")
+def container_start(name):
+    """Start a container by name/id."""
+    _run_container_cmd(["start", shlex.quote(name)])
+
+
+@container_group.command("stop")
+@click.argument("name")
+@click.option("--timeout", default=10, type=int)
+def container_stop(name, timeout):
+    """Stop a container by name/id."""
+    _run_container_cmd(["stop", shlex.quote(name), "--timeout", str(timeout)])
+
+
+@container_group.command("remove")
+@click.argument("name")
+@click.option("--force", is_flag=True)
+def container_remove(name, force):
+    """Remove a container by name/id."""
+    args = ["remove", shlex.quote(name)]
+    if force:
+        args.append("--force")
+    _run_container_cmd(args)
+
+
+@container_group.command("logs")
+@click.argument("name")
+@click.option("--tail", default=100, type=int)
+def container_logs(name, tail):
+    """Show recent container logs."""
+    _run_container_cmd(["logs", shlex.quote(name), "--tail", str(tail)], timeout=120)
+
+
+@container_group.command("run")
+@click.argument("image")
+@click.option("--name", default=None)
+@click.option("--attach", is_flag=True)
+@click.option("--port", "ports", multiple=True)
+@click.option("--env", "env_vars", multiple=True)
+@click.option("--command", "run_command", default=None)
+def container_run(image, name, attach, ports, env_vars, run_command):
+    """Run a new container."""
+    args = ["run", shlex.quote(image)]
+    if name:
+        args += ["--name", shlex.quote(name)]
+    if attach:
+        args.append("--attach")
+    for p in ports:
+        args += ["--port", shlex.quote(p)]
+    for ev in env_vars:
+        args += ["--env", shlex.quote(ev)]
+    if run_command:
+        args += ["--run-command", shlex.quote(run_command)]
+    _run_container_cmd(args, timeout=120)
 
 # ── Entry Point ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":

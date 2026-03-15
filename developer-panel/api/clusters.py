@@ -31,10 +31,30 @@ class NodeCommandRequest(BaseModel):
     payload: Optional[dict] = None
 
 
+class NodeHeartbeatRequest(BaseModel):
+    panel_version: Optional[str] = None
+    cpu_cores: Optional[int] = None
+    ram_mb: Optional[int] = None
+    disk_gb: Optional[int] = None
+    cpu_percent: Optional[float] = None
+    ram_percent: Optional[float] = None
+    disk_percent: Optional[float] = None
+    network_in_mbps: Optional[float] = None
+    network_out_mbps: Optional[float] = None
+    load_average: Optional[float] = None
+    active_connections: Optional[int] = None
+    uptime_seconds: Optional[int] = None
+
+
 @router.post("/nodes/register")
 async def register_node(body: RegisterNodeRequest, db: AsyncSession = Depends(get_db)):
     """Register a server node in the cluster database."""
     try:
+        metadata = {
+            "role": body.role,
+            "region": body.region,
+            "specs": body.specs or {},
+        }
         node = await cluster_manager.register_server(
             db=db,
             hostname=body.hostname,
@@ -43,6 +63,8 @@ async def register_node(body: RegisterNodeRequest, db: AsyncSession = Depends(ge
             cluster_id=body.cluster_id,
             os_info=body.os_info,
             license_key=body.license_key,
+            metadata=metadata,
+            initial_status="online",
         )
         return {
             "success": True,
@@ -52,6 +74,7 @@ async def register_node(body: RegisterNodeRequest, db: AsyncSession = Depends(ge
                 "ip_address": node.ip_address,
                 "status": node.status,
                 "cluster_id": str(node.cluster_id) if node.cluster_id else None,
+                "region": (node.metadata_ or {}).get("region"),
             },
         }
     except Exception as exc:  # noqa: BLE001
@@ -113,6 +136,20 @@ async def send_command(node_id: str, body: NodeCommandRequest, db: AsyncSession 
 
     payload = await cluster_manager.push_command(node, body.command, body.payload)
     return {"success": True, "node_id": node_id, "command": body.command, "result": payload}
+
+
+@router.post("/nodes/{node_id}/heartbeat")
+async def node_heartbeat(node_id: str, body: NodeHeartbeatRequest, db: AsyncSession = Depends(get_db)):
+    """Record a heartbeat and metric snapshot for a node."""
+    try:
+        result = await cluster_manager.heartbeat(
+            db,
+            node_id,
+            metrics=body.model_dump(exclude_none=True),
+        )
+        return {"success": True, "node_id": node_id, **result}
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.delete("/nodes/{node_id}")
