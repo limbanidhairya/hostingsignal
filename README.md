@@ -133,6 +133,12 @@ Provisioning auto-resolves mapping when `whmcs_product_id` is sent.
 
 ## ⚙️ Service-First Install
 
+GitHub one-command universal install (no manual clone required):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+```
+
 Universal one-command install for the full local stack:
 
 ```bash

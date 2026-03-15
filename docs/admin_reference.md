@@ -31,6 +31,12 @@ This page is the admin-facing reference for installs, release status, service po
 Use this command to generate, configure, and start the full HostingSignal local stack in one run:
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+```
+
+Local checkout variant:
+
+```bash
 bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 

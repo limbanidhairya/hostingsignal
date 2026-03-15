@@ -10,6 +10,14 @@ Use this page for the production-style local sandbox install flow.
 
 ## One Command (Full Stack)
 
+From GitHub directly (recommended quick path):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+```
+
+From a local repository checkout:
+
 ```bash
 bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
