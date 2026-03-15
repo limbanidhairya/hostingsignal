@@ -1,0 +1,6 @@
+title: HostingSignal Docs
+description: HostingSignal documentation and admin reference
+url: https://docs.hostingsignal.in
+baseurl: ""
+markdown: kramdown
+theme: minima

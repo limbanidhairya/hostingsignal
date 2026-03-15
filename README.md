@@ -236,6 +236,22 @@ Expected: sub-second responses in healthy local runtime.
 - `handoff130326.md` (latest implementation + runbook)
 - `docs/06_cyberpanel_aligned_approach.md`
 - `docs/05_queue_security_plugins_microservices.md`
+- `docs/index.md`
+- `docs/admin_reference.md`
+
+## 🌍 Documentation Site
+
+Configured custom docs domain:
+
+```text
+https://docs.hostingsignal.in/
+```
+
+Admin reference landing page:
+
+```text
+https://docs.hostingsignal.in/admin_reference.html
+```
 
 ---
 
