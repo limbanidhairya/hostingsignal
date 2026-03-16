@@ -7,6 +7,7 @@ PDNS_DB_USER="${PDNS_DB_USER:-pdns}"
 PDNS_DB_PASSWD="${PDNS_DB_PASSWD:-}"
 PDNS_API_KEY="${PDNS_API_KEY:-}"
 PDNS_API_PORT="${PDNS_API_PORT:-8053}"
+PDNS_DB_PORT="${PDNS_DB_PORT:-}"
 
 install_powerdns() {
   log_info "Installing PowerDNS..."
@@ -20,6 +21,8 @@ install_powerdns() {
   [[ -z "$PDNS_DB_PASSWD" ]] && PDNS_DB_PASSWD="$(openssl rand -base64 18 | tr -dc 'A-Za-z0-9' | head -c 18)"
   [[ -z "$PDNS_API_KEY"   ]] && PDNS_API_KEY="$(openssl rand -hex 16)"
 
+  _resolve_pdns_db_port
+
   if [[ "$OS_FAMILY" == "debian" ]]; then
     _install_pdns_debian
   else
@@ -28,11 +31,31 @@ install_powerdns() {
 
   _create_pdns_db
   _configure_pdns
-  systemctl enable --now pdns
+  if ! systemctl enable --now pdns; then
+    log_error "PowerDNS failed to start"
+    systemctl status pdns --no-pager 2>/dev/null || true
+    journalctl -xeu pdns.service --no-pager -n 80 2>/dev/null || true
+    return 1
+  fi
 
   log_success "PowerDNS installed (API port: $PDNS_API_PORT)"
   mark_service_done "powerdns"
   rollback_stop_service "pdns"
+}
+
+_resolve_pdns_db_port() {
+  if [[ -z "${PDNS_DB_PORT}" ]]; then
+    if [[ -n "${MARIADB_PORT:-}" ]]; then
+      PDNS_DB_PORT="${MARIADB_PORT}"
+    elif [[ -f /root/.my.cnf ]]; then
+      PDNS_DB_PORT="$(awk -F= '/^[[:space:]]*port[[:space:]]*=/{gsub(/[[:space:]]/,"",$2); print $2; exit}' /root/.my.cnf 2>/dev/null || true)"
+    elif [[ -f /etc/mysql/mariadb.conf.d/50-server.cnf ]]; then
+      PDNS_DB_PORT="$(awk -F= '/^[[:space:]]*port[[:space:]]*=/{gsub(/[[:space:]]/,"",$2); print $2; exit}' /etc/mysql/mariadb.conf.d/50-server.cnf 2>/dev/null || true)"
+    fi
+  fi
+
+  [[ -z "${PDNS_DB_PORT}" ]] && PDNS_DB_PORT="3306"
+  log_info "[PowerDNS] Using MariaDB port ${PDNS_DB_PORT}"
 }
 
 _install_pdns_debian() {
@@ -73,7 +96,9 @@ _create_pdns_db() {
   mysql --defaults-file=/root/.my.cnf <<SQL
 CREATE DATABASE IF NOT EXISTS \`${PDNS_DB}\` CHARACTER SET utf8;
 CREATE USER IF NOT EXISTS '${PDNS_DB_USER}'@'localhost' IDENTIFIED BY '${PDNS_DB_PASSWD}';
+CREATE USER IF NOT EXISTS '${PDNS_DB_USER}'@'127.0.0.1' IDENTIFIED BY '${PDNS_DB_PASSWD}';
 GRANT ALL PRIVILEGES ON \`${PDNS_DB}\`.* TO '${PDNS_DB_USER}'@'localhost';
+GRANT ALL PRIVILEGES ON \`${PDNS_DB}\`.* TO '${PDNS_DB_USER}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
 
@@ -130,7 +155,7 @@ setgid=pdns
 
 launch=gmysql
 gmysql-host=127.0.0.1
-gmysql-port=3306
+gmysql-port=${PDNS_DB_PORT}
 gmysql-dbname=${PDNS_DB}
 gmysql-user=${PDNS_DB_USER}
 gmysql-password=${PDNS_DB_PASSWD}
