@@ -7,6 +7,23 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+# Terminal formatting (safe under set -u and when tput is missing)
+if [ -t 1 ]; then
+  BOLD="$(tput bold 2>/dev/null || true)"
+  RESET="$(tput sgr0 2>/dev/null || true)"
+  RED="$(tput setaf 1 2>/dev/null || true)"
+  GREEN="$(tput setaf 2 2>/dev/null || true)"
+  YELLOW="$(tput setaf 3 2>/dev/null || true)"
+  BLUE="$(tput setaf 4 2>/dev/null || true)"
+else
+  BOLD=""
+  RESET=""
+  RED=""
+  GREEN=""
+  YELLOW=""
+  BLUE=""
+fi
+
 readonly INSTALLER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 readonly LOG_FILE="/var/log/hspanel_install.log"
 readonly CREDS_FILE="/root/hspanel_credentials.txt"

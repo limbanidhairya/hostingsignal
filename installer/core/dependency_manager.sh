@@ -6,6 +6,7 @@
 _COMMON_PKGS_DEBIAN=(
   curl wget git unzip zip tar gnupg2 lsb-release
   software-properties-common ca-certificates apt-transport-https
+  ncurses-bin
   python3 python3-pip python3-venv
   build-essential make gcc
   netcat-openbsd quota
