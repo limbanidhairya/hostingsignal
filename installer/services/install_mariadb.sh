@@ -10,20 +10,13 @@ MARIADB_APP_PASSWD="${MARIADB_APP_PASSWD:-}"
 install_mariadb() {
   log_info "Installing MariaDB..."
 
-  if systemctl is-active --quiet mariadb 2>/dev/null || systemctl is-active --quiet mysql 2>/dev/null; then
-    log_info "MariaDB already running — skipping install"
-    mark_service_skipped "mariadb"
-    return 0
-  fi
-
-  # Pre-flight: free port 3306 if something else is already holding it.
-  # apt's post-install script tries to start mariadb immediately; if the port
-  # is busy the start fails and dpkg exits with an error code.
-  _mariadb_free_port3306
-
-  # Generate passwords if not set
+  # Generate passwords before any work so they are available throughout
   [[ -z "$MARIADB_ROOT_PASSWD" ]] && MARIADB_ROOT_PASSWD="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 24)"
   [[ -z "$MARIADB_APP_PASSWD"  ]] && MARIADB_APP_PASSWD="$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 24)"
+
+  # Full pre-install cleanup — resolves port conflicts, stale packages and
+  # broken repo files before we install, so dpkg never fails mid-flight.
+  _mariadb_pre_install_cleanup
 
   if [[ "$OS_FAMILY" == "debian" ]]; then
     _install_mariadb_debian
@@ -31,68 +24,94 @@ install_mariadb() {
     _install_mariadb_rhel
   fi
 
-  systemctl enable --now mariadb
+  # Step 7 — reload systemd after fresh unit files were written by dpkg
+  systemctl daemon-reload 2>/dev/null || true
+
+  # Step 8 — enable and (re)start
+  systemctl enable mariadb 2>/dev/null || true
+  systemctl restart mariadb 2>/dev/null || true
 
   _secure_mariadb
   _create_hspanel_db
 
+  # Step 9 — health check: verify port 3306 is listening
+  _mariadb_health_check
+
   log_success "MariaDB installed and configured"
   mark_service_done "mariadb"
-
   rollback_stop_service "mariadb"
 }
 
 # ---------------------------------------------------------------------------
-# _mariadb_free_port3306
+# _mariadb_pre_install_cleanup
 # ---------------------------------------------------------------------------
-# Stop any service that owns port 3306 before MariaDB installation begins.
-# The dpkg post-install script starts mariadbd immediately; if port 3306 is
-# already bound the daemon exits with status 1 and dpkg returns error code 1.
+# Runs the full 6-step cleanup before any package installation so that
+# the dpkg post-install hook can always start mariadbd cleanly.
 # ---------------------------------------------------------------------------
-_mariadb_free_port3306() {
-  # Check if 3306 is in use at all
-  if ! ss -tulnp 2>/dev/null | grep -q ':3306'; then
-    return 0   # port is free — nothing to do
+_mariadb_pre_install_cleanup() {
+  # ── Step 1: detect what is holding port 3306 ──────────────────────────────
+  local _port_pid=""
+  if command -v lsof &>/dev/null; then
+    _port_pid="$(lsof -i :3306 -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
+  fi
+  if [[ -z "$_port_pid" ]]; then
+    # lsof not available — fall back to ss
+    _port_pid="$(ss -tulnp 2>/dev/null \
+      | awk '/:3306 /{match($0,/pid=([0-9]+)/,a); if(a[1]) print a[1]; exit}' || true)"
+  fi
+  if [[ -n "$_port_pid" ]]; then
+    log_warning "[MariaDB] Port 3306 already in use by PID ${_port_pid}"
   fi
 
-  log_warning "[MariaDB] Port 3306 already in use — stopping conflicting service"
-
-  # 1. Try known service names first (clean shutdown)
+  # ── Step 2: stop conflicting systemd services ──────────────────────────────
   for _svc in mysql mysqld mariadb; do
-    if systemctl is-active --quiet "$_svc" 2>/dev/null; then
-      log_warning "[MariaDB] Stopping ${_svc}.service"
-      systemctl stop "$_svc" 2>/dev/null || true
-    fi
+    systemctl stop "$_svc" 2>/dev/null || true
   done
 
-  # 2. If port is still busy, kill the process holding it directly
-  if ss -tulnp 2>/dev/null | grep -q ':3306'; then
-    local _pid
-    _pid="$(ss -tulnp 2>/dev/null | awk '/:3306 /{match($0,/pid=([0-9]+)/,a); if(a[1]) print a[1]; exit}')"
-    if [[ -n "$_pid" ]]; then
-      log_warning "[MariaDB] Killing PID ${_pid} which holds port 3306"
-      kill "$_pid" 2>/dev/null || true
-      sleep 2
+  # ── Step 3: kill leftover processes ───────────────────────────────────────
+  pkill -f mysqld 2>/dev/null || true
+  pkill -f mysql  2>/dev/null || true
+  sleep 1   # give processes a moment to exit
+
+  # ── Step 4: purge any broken/conflicting MariaDB or MySQL packages ─────────
+  if [[ "$OS_FAMILY" == "debian" ]]; then
+    export DEBIAN_FRONTEND=noninteractive
+    # Record whether mariadb-server was already present; if so skip the purge
+    # so we don't wipe an existing working database on re-runs.
+    if dpkg -l mariadb-server 2>/dev/null | grep -q '^ii'; then
+      log_info "[MariaDB] Existing mariadb-server package found — skipping purge"
+    else
+      apt-get remove --purge -y \
+        mariadb-server mariadb-client \
+        mysql-server mysql-client 2>/dev/null || true
+      apt-get autoremove -y 2>/dev/null || true
     fi
   fi
 
-  # 3. Final check — abort early with a clear message rather than letting
-  #    dpkg fail with a cryptic error
+  # ── Step 5: remove stale/broken repo list files ───────────────────────────
+  if [[ "$OS_FAMILY" == "debian" ]]; then
+    rm -f /etc/apt/sources.list.d/mariadb.list.old_* 2>/dev/null || true
+    apt-get update -qq 2>/dev/null || true
+  fi
+
+  # ── Final port check after cleanup ────────────────────────────────────────
   if ss -tulnp 2>/dev/null | grep -q ':3306'; then
-    log_warning "[MariaDB] Port 3306 still busy after stop attempts — install may fail"
+    log_warning "[MariaDB] Port 3306 still busy after cleanup — install may fail"
   else
-    log_success "[MariaDB] Port 3306 is now free"
+    log_success "[MariaDB] Port 3306 is free — proceeding with installation"
   fi
 }
 
+# ── Step 6: install MariaDB cleanly ─────────────────────────────────────────
 _install_mariadb_debian() {
   export DEBIAN_FRONTEND=noninteractive
-  # Use MariaDB official repo for consistent version
+
+  # Add MariaDB 10.11 official repo (idempotent — skips if key/list exists)
   curl -fsSL https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | \
     bash -s -- --mariadb-server-version="mariadb-10.11" > /dev/null 2>&1
 
   apt-get update -qq
-  apt-get install -y -qq mariadb-server mariadb-client
+  apt-get install -y mariadb-server mariadb-client
 }
 
 _install_mariadb_rhel() {
@@ -106,9 +125,28 @@ EOF
   dnf install -y MariaDB-server MariaDB-client --skip-broken
 }
 
+# ── Step 9: health check ─────────────────────────────────────────────────────
+_mariadb_health_check() {
+  local _up=false
+  for _i in 1 2 3 4 5; do
+    if ss -tulnp 2>/dev/null | grep -q ':3306'; then
+      _up=true; break
+    fi
+    sleep 2
+  done
+
+  if $_up; then
+    log_success "[MariaDB] Port 3306 is listening"
+  else
+    echo "[ERROR] MariaDB failed to start — port 3306 not listening"
+    systemctl status mariadb --no-pager 2>/dev/null || true
+    return 1
+  fi
+}
+
 _secure_mariadb() {
   # Wait for socket
-  local retries=10
+  local retries=15
   while (( retries-- > 0 )); do
     mysqladmin ping --silent 2>/dev/null && break || sleep 1
   done
