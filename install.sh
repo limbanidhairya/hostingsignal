@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# When piped via "curl | bash" BASH_SOURCE is unset; fall back to empty so
-# resolve_root_dir skips the local-file check and bootstraps from GitHub.
+# Root installer behavior:
+# - default: production master installer (installer/install.sh)
+# - local-dev mode: scripts/local_installer.py (when local flags are passed)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" 2>/dev/null && pwd || echo "")"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
@@ -10,10 +11,15 @@ GITHUB_OWNER="${HS_REPO_OWNER:-limbanidhairya}"
 GITHUB_REPO="${HS_REPO_NAME:-hostingsignal}"
 GITHUB_REF="${HS_REPO_REF:-main}"
 
-if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
-  echo "python3 is required to run the HostingSignal installer" >&2
-  exit 1
-fi
+LOCAL_DEV_MODE=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --local-dev|--mode|--profile-set|--profiles|--web|--db|--all|--non-interactive)
+      LOCAL_DEV_MODE=true
+      ;;
+  esac
+done
 
 download_file() {
   local url="$1"
@@ -38,7 +44,7 @@ bootstrap_repo() {
 
   if command -v git >/dev/null 2>&1; then
     git clone --depth 1 --branch "$GITHUB_REF" "https://github.com/$GITHUB_OWNER/$GITHUB_REPO.git" "$tmp_root/repo" >/dev/null 2>&1 || true
-    if [[ -f "$tmp_root/repo/scripts/local_installer.py" ]]; then
+    if [[ -f "$tmp_root/repo/installer/install.sh" ]]; then
       echo "$tmp_root/repo"
       return 0
     fi
@@ -51,8 +57,8 @@ bootstrap_repo() {
   tar -xzf "$archive_file" -C "$tmp_root"
   extracted_root="$(find "$tmp_root" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
 
-  if [[ -z "$extracted_root" || ! -f "$extracted_root/scripts/local_installer.py" ]]; then
-    echo "Unable to locate scripts/local_installer.py after bootstrap" >&2
+  if [[ -z "$extracted_root" || ! -f "$extracted_root/installer/install.sh" ]]; then
+    echo "Unable to locate installer/install.sh after bootstrap" >&2
     exit 1
   fi
 
@@ -60,7 +66,7 @@ bootstrap_repo() {
 }
 
 resolve_root_dir() {
-  if [[ -f "$SCRIPT_DIR/scripts/local_installer.py" ]]; then
+  if [[ -f "$SCRIPT_DIR/installer/install.sh" ]]; then
     echo "$SCRIPT_DIR"
     return 0
   fi
@@ -69,9 +75,27 @@ resolve_root_dir() {
 
 ROOT_DIR="$(resolve_root_dir)"
 
-if [[ "$#" -eq 0 ]]; then
-  set -- --mode all --all --non-interactive --web openlitespeed --db mariadb
+run_local_dev() {
+  if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+    echo "python3 is required for local-dev install mode" >&2
+    exit 1
+  fi
+
+  if [[ "$#" -eq 0 ]]; then
+    set -- --mode all --all --non-interactive --web openlitespeed --db mariadb
+  fi
+
+  echo "Starting HostingSignal local-dev installer from: $ROOT_DIR"
+  exec "$PYTHON_BIN" "$ROOT_DIR/scripts/local_installer.py" "$@"
+}
+
+run_master() {
+  echo "Starting HostingSignal master installer from: $ROOT_DIR"
+  exec bash "$ROOT_DIR/installer/install.sh" "$@"
+}
+
+if $LOCAL_DEV_MODE; then
+  run_local_dev "$@"
 fi
 
-echo "Starting HostingSignal installer from: $ROOT_DIR"
-exec "$PYTHON_BIN" "$ROOT_DIR/scripts/local_installer.py" "$@"
+run_master "$@"

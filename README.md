@@ -168,26 +168,26 @@ sudo bash installer/install.sh --unattended              # non-interactive
 sudo bash installer/install.sh --skip-firewall --dev     # development
 ```
 
-Credentials are written to \/root/hspanel_credentials.txt\ after install.
+Credentials are written to `/root/hspanel_credentials.txt` after install.
 
 | Access URL | Purpose |
 |---|---|
-| \http://<IP>:3000\ | HS-Panel UI |
-| \http://<IP>:2087\ | Panel API |
-| \https://<IP>:7080\ | OpenLiteSpeed Admin |
-| \http://<IP>/phpmyadmin\ | phpMyAdmin |
-| \http://<IP>/webmail\ | SnappyMail Webmail |
+| `http://<IP>:3000` | HS-Panel UI |
+| `http://<IP>:2087` | Panel API |
+| `https://<IP>:7080` | OpenLiteSpeed Admin |
+| `http://<IP>/phpmyadmin` | phpMyAdmin |
+| `http://<IP>/webmail` | SnappyMail Webmail |
 
 Full install guide: [docs.hostingsignal.in/install/](https://docs.hostingsignal.in/install/)
 
 ---
 
-## ⚙️ Service-First Install
+## ⚙️ Local Dev Install (Docker Compose)
 
 Universal one-command install — no clone needed, runs directly from GitHub:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash -s -- --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 This fetches the latest installer, clones the repo into a temp directory, generates the full Docker Compose stack, writes `configs/install-config.json`, and starts the selected profile set.

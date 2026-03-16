@@ -24,16 +24,16 @@ Welcome to the HostingSignal documentation hub.
 
 ## Universal Install Command
 
-One command — no clone needed, runs directly from GitHub:
+Production one command — no clone needed, runs directly from GitHub:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 ```
 
-Local checkout variant:
+Local dev checkout variant:
 
 ```bash
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+bash ./install.sh --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 Need step-by-step guidance? Open [Universal Install Guide]({{ '/install/' | relative_url }}).

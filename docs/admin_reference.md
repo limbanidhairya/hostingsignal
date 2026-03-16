@@ -28,22 +28,22 @@ This page is the admin-facing reference for installs, release status, service po
 
 ## Master Install Command
 
-Use this command to generate, configure, and start the full HostingSignal local stack in one run:
+Use this command to run the production master installer from GitHub:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 ```
 
-Local checkout variant:
+Local dev checkout variant:
 
 ```bash
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+bash ./install.sh --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 Core-only fallback:
 
 ```bash
-bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
+bash ./install.sh --local-dev --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 Detailed install runbook:

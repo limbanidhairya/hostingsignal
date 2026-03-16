@@ -22,10 +22,10 @@ This keeps behavior predictable and makes install failures easier to isolate.
 
 ## Installer pipeline
 
-`install.sh` now supports an explicit universal full-stack command and profile-aware startup:
+`install.sh` now defaults to the production master installer and supports explicit local-dev profile startup with `--local-dev`:
 
-- `--mode all --all`: generate, configure, and start the full local HostingSignal stack.
-- `--profile-set core`: start only the lighter core subset.
+- `--local-dev --mode all --all`: generate, configure, and start the full local HostingSignal stack.
+- `--local-dev --profile-set core`: start only the lighter core subset.
 
 Default local bundle root: `./local/services`
 
@@ -57,10 +57,10 @@ Purpose:
 
 ```bash
 # Universal full-stack run
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+bash ./install.sh --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
 
 # Core-only local stack
-bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
+bash ./install.sh --local-dev --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 ## Notes
