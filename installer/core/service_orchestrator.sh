@@ -6,7 +6,9 @@
 # Each entry: "SERVICE:dep1,dep2,..."
 # Empty dependencies mean no prereqs.
 
-declare -A SERVICE_DEPS=(
+# -g forces global scope even when this file is sourced from inside a function
+# (bash: declare without -g inside a function call creates a local variable)
+declare -gA SERVICE_DEPS=(
   ["system"]=""
   ["openlitespeed"]="system"
   ["mariadb"]="system"
@@ -20,11 +22,11 @@ declare -A SERVICE_DEPS=(
 )
 
 # Resolved install order (populated by resolve_order)
-declare -a INSTALL_ORDER=()
+declare -ga INSTALL_ORDER=()
 
 # Track visited/resolved state for topological sort
-declare -A _VISITED=()
-declare -A _IN_STACK=()
+declare -gA _VISITED=()
+declare -gA _IN_STACK=()
 
 _resolve_service() {
   local svc="$1"
@@ -72,7 +74,7 @@ print_install_order() {
 }
 
 # ── Service state tracking ────────────────────────────────────────────────────
-declare -A SERVICE_STATUS=()
+declare -gA SERVICE_STATUS=()
 
 mark_service_done() {
   local svc="$1"

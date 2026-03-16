@@ -134,19 +134,18 @@ _ols_start_service() {
     /etc/init.d/lsws start 2>/dev/null || true
   fi
 
-  # Give OLS time to fully initialise and bind ports
-  sleep 6
-
-  # Verify: lswsctrl status is the most reliable check regardless of
-  # how the process was started or what the unit name is
+  # Wait for process to come up — retry every 3 s, up to 15 s total
   local is_running=false
-  if /usr/local/lsws/bin/lswsctrl status 2>/dev/null | grep -qi "running"; then
-    is_running=true
-  elif pgrep -f "/usr/local/lsws" &>/dev/null; then
-    is_running=true
-  elif [[ -n "$OLS_SVC_UNIT" ]] && systemctl is-active --quiet "$OLS_SVC_UNIT" 2>/dev/null; then
-    is_running=true
-  fi
+  for _i in 1 2 3 4 5; do
+    sleep 3
+    if /usr/local/lsws/bin/lswsctrl status 2>/dev/null | grep -qi "running"; then
+      is_running=true; break
+    elif pgrep -f "/usr/local/lsws" &>/dev/null; then
+      is_running=true; break
+    elif [[ -n "$OLS_SVC_UNIT" ]] && systemctl is-active --quiet "$OLS_SVC_UNIT" 2>/dev/null; then
+      is_running=true; break
+    fi
+  done
 
   if $is_running; then
     log_success "OpenLiteSpeed running"
@@ -155,7 +154,6 @@ _ols_start_service() {
     if [[ -n "$OLS_SVC_UNIT" ]]; then
       systemctl status "$OLS_SVC_UNIT" --no-pager 2>/dev/null || true
     fi
-    # Show OLS own error log for diagnostics
     if [[ -f /usr/local/lsws/logs/error.log ]]; then
       echo "--- OLS error log (last 20 lines) ---"
       tail -20 /usr/local/lsws/logs/error.log 2>/dev/null || true
@@ -163,11 +161,18 @@ _ols_start_service() {
     return 1
   fi
 
-  # Verify admin port 8090 is listening
-  if ss -tulnp 2>/dev/null | grep -q ':8090'; then
+  # Verify admin port 8090 is listening — retry up to 15 s
+  local port_up=false
+  for _i in 1 2 3 4 5; do
+    if ss -tulnp 2>/dev/null | grep -q ':8090'; then
+      port_up=true; break
+    fi
+    sleep 3
+  done
+  if $port_up; then
     log_success "OpenLiteSpeed running on port 8090"
   else
-    log_warning "[OpenLiteSpeed] port 8090 not yet listening — check /usr/local/lsws/logs/error.log"
+    log_warning "[OpenLiteSpeed] port 8090 not listening after 15 s — check /usr/local/lsws/logs/error.log"
   fi
 }
 
