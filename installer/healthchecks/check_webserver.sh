@@ -12,11 +12,19 @@ check_webserver() {
     status=1
   fi
 
-  # 2. Systemd unit check (use the real unit name; lsws.service is only an alias)
-  if systemctl is-active --quiet openlitespeed 2>/dev/null; then
-    log_success "  [webserver] systemd unit openlitespeed.service is active"
+  # 2. Systemd unit check — probe the real unit name (lshttpd, openlitespeed, or lsws)
+  local _ols_unit=""
+  for _u in lshttpd openlitespeed lsws; do
+    if systemctl list-unit-files --type=service 2>/dev/null | grep -q "^${_u}\.service"; then
+      _ols_unit="$_u"; break
+    fi
+  done
+  if [[ -n "$_ols_unit" ]] && systemctl is-active --quiet "$_ols_unit" 2>/dev/null; then
+    log_success "  [webserver] systemd unit ${_ols_unit}.service is active"
+  elif /usr/local/lsws/bin/lswsctrl status 2>/dev/null | grep -qi "running"; then
+    log_success "  [webserver] OpenLiteSpeed running (via lswsctrl)"
   else
-    log_warning "  [webserver] systemd unit openlitespeed.service not active (may use init.d)"
+    log_warning "  [webserver] OpenLiteSpeed not detected via systemd or lswsctrl"
   fi
 
   # 3. Port 80 open

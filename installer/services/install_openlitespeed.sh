@@ -33,36 +33,64 @@ install_openlitespeed() {
 }
 
 # ---------------------------------------------------------------------------
+# _ols_resolve_unit
+# ---------------------------------------------------------------------------
+# The real systemd unit name varies by OLS version and install method:
+#   lshttpd.service     — current official LiteSpeed apt/yum packages
+#   openlitespeed.service — older packages / some distros
+#   lsws.service        — SysV-generated wrapper (alias, cannot be enabled)
+# Returns the first unit name found in the systemd unit list.
+# ---------------------------------------------------------------------------
+_ols_resolve_unit() {
+  for _u in lshttpd openlitespeed lsws; do
+    if systemctl list-unit-files --type=service 2>/dev/null \
+        | grep -q "^${_u}\.service"; then
+      echo "$_u"
+      return
+    fi
+  done
+  echo ""
+}
+
+# Populated by _ols_enable_service, consumed by _ols_start_service
+OLS_SVC_UNIT=""
+
+# ---------------------------------------------------------------------------
 # _ols_enable_service
 # ---------------------------------------------------------------------------
-# systemctl enable fails with "Refusing to operate on alias name or linked
-# unit file" when OLS is installed from the official LiteSpeed apt/yum repo,
-# because both lsws.service and openlitespeed.service are aliases for a
-# systemd-generated wrapper around the /etc/init.d/lsws SysV script.
-#
 # Strategy (tried in order):
-#   1. Enable by FragmentPath (absolute path avoids alias resolution).
-#   2. update-rc.d  — Debian / Ubuntu with SysV init script.
-#   3. chkconfig    — RHEL / AlmaLinux.
-#   4. Warn and continue — don't abort the install for a boot-time flag.
+#   1. systemctl enable <resolved-unit>  — works for lshttpd.service
+#   2. Enable by FragmentPath            — bypasses alias check
+#   3. update-rc.d                       — Debian/Ubuntu SysV path
+#   4. chkconfig                         — RHEL/AlmaLinux
+#   5. Warn and continue                 — don't abort for a boot flag
 # ---------------------------------------------------------------------------
 _ols_enable_service() {
+  OLS_SVC_UNIT="$(_ols_resolve_unit)"
   local enabled=false
 
-  # 1. Try enabling by the real file path (skips alias check)
-  local fragment
-  fragment="$(systemctl show -p FragmentPath openlitespeed.service 2>/dev/null \
-    | cut -d= -f2 || true)"
-  if [[ -n "$fragment" && -f "$fragment" && "$fragment" != /run/systemd/* ]]; then
-    if systemctl enable "$fragment" 2>/dev/null; then
+  # 1. Enable by resolved unit name (covers lshttpd.service)
+  if [[ -n "$OLS_SVC_UNIT" ]]; then
+    if systemctl enable "$OLS_SVC_UNIT" 2>/dev/null; then
       enabled=true
       log_success "OpenLiteSpeed service enabled"
     fi
   fi
 
-  # 2. init.d + update-rc.d (Debian/Ubuntu — official LiteSpeed repo installs
-  #    /etc/init.d/lsws and systemd generates a transient wrapper that cannot
-  #    be enabled via systemctl enable)
+  # 2. Enable by FragmentPath (bypasses alias resolution for edge cases)
+  if ! $enabled && [[ -n "$OLS_SVC_UNIT" ]]; then
+    local fragment
+    fragment="$(systemctl show -p FragmentPath "${OLS_SVC_UNIT}.service" 2>/dev/null \
+      | cut -d= -f2 || true)"
+    if [[ -n "$fragment" && -f "$fragment" && "$fragment" != /run/systemd/* ]]; then
+      if systemctl enable "$fragment" 2>/dev/null; then
+        enabled=true
+        log_success "OpenLiteSpeed service enabled"
+      fi
+    fi
+  fi
+
+  # 3. update-rc.d — Debian/Ubuntu with SysV init script
   if ! $enabled && [[ -f /etc/init.d/lsws ]] && command -v update-rc.d &>/dev/null; then
     update-rc.d lsws defaults 2>/dev/null || true
     update-rc.d lsws enable  2>/dev/null || true
@@ -70,7 +98,7 @@ _ols_enable_service() {
     log_success "OpenLiteSpeed service enabled (via update-rc.d)"
   fi
 
-  # 3. chkconfig — RHEL / AlmaLinux
+  # 4. chkconfig — RHEL/AlmaLinux
   if ! $enabled && command -v chkconfig &>/dev/null; then
     chkconfig lsws on 2>/dev/null || true
     enabled=true
@@ -78,34 +106,60 @@ _ols_enable_service() {
   fi
 
   if ! $enabled; then
-    log_warning "[OpenLiteSpeed] Could not enable service at boot — will start manually"
+    log_warning "[OpenLiteSpeed] Could not enable at boot — will start manually"
   fi
 }
 
 # ---------------------------------------------------------------------------
-# _ols_start_service — start OLS with layered fallbacks
+# _ols_start_service — start OLS with pre-flight and layered fallbacks
 # ---------------------------------------------------------------------------
 _ols_start_service() {
-  # Try systemctl start (works even when enable is the one that fails)
-  if ! systemctl start openlitespeed 2>/dev/null; then
-    log_warning "[OpenLiteSpeed] systemd start failed — trying init.d script"
-    if [[ -f /etc/init.d/lsws ]]; then
-      /etc/init.d/lsws start 2>/dev/null || true
-    else
-      /usr/local/lsws/bin/lswsctrl start 2>/dev/null || true
+  OLS_SVC_UNIT="${OLS_SVC_UNIT:-$(_ols_resolve_unit)}"
+
+  # Pre-flight: stop any service holding port 80 so OLS can bind
+  for _blocker in apache2 nginx httpd; do
+    if systemctl is-active --quiet "$_blocker" 2>/dev/null; then
+      log_warning "[OpenLiteSpeed] Stopping ${_blocker} to free port 80"
+      systemctl stop "$_blocker" 2>/dev/null || true
     fi
+  done
+
+  # Start via lswsctrl directly — this is exactly what the unit's ExecStart
+  # calls, and it avoids all unit-name / alias confusion entirely.
+  if [[ -x /usr/local/lsws/bin/lswsctrl ]]; then
+    /usr/local/lsws/bin/lswsctrl start 2>/dev/null || true
+  elif [[ -n "$OLS_SVC_UNIT" ]]; then
+    systemctl start "$OLS_SVC_UNIT" 2>/dev/null || true
+  elif [[ -f /etc/init.d/lsws ]]; then
+    /etc/init.d/lsws start 2>/dev/null || true
   fi
 
-  # Give OLS a moment to fully bind its ports (OLS admin UI takes ~5 s)
+  # Give OLS time to fully initialise and bind ports
   sleep 6
 
-  # Verify process is up
-  if systemctl is-active --quiet openlitespeed 2>/dev/null || \
-     pgrep -x litespeed &>/dev/null; then
+  # Verify: lswsctrl status is the most reliable check regardless of
+  # how the process was started or what the unit name is
+  local is_running=false
+  if /usr/local/lsws/bin/lswsctrl status 2>/dev/null | grep -qi "running"; then
+    is_running=true
+  elif pgrep -f "/usr/local/lsws" &>/dev/null; then
+    is_running=true
+  elif [[ -n "$OLS_SVC_UNIT" ]] && systemctl is-active --quiet "$OLS_SVC_UNIT" 2>/dev/null; then
+    is_running=true
+  fi
+
+  if $is_running; then
     log_success "OpenLiteSpeed running"
   else
     echo "[ERROR] OpenLiteSpeed failed to start"
-    systemctl status openlitespeed --no-pager 2>/dev/null || true
+    if [[ -n "$OLS_SVC_UNIT" ]]; then
+      systemctl status "$OLS_SVC_UNIT" --no-pager 2>/dev/null || true
+    fi
+    # Show OLS own error log for diagnostics
+    if [[ -f /usr/local/lsws/logs/error.log ]]; then
+      echo "--- OLS error log (last 20 lines) ---"
+      tail -20 /usr/local/lsws/logs/error.log 2>/dev/null || true
+    fi
     return 1
   fi
 
@@ -113,7 +167,7 @@ _ols_start_service() {
   if ss -tulnp 2>/dev/null | grep -q ':8090'; then
     log_success "OpenLiteSpeed running on port 8090"
   else
-    log_warning "[OpenLiteSpeed] port 8090 not yet listening — OLS may still be initialising"
+    log_warning "[OpenLiteSpeed] port 8090 not yet listening — check /usr/local/lsws/logs/error.log"
   fi
 }
 
