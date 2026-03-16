@@ -96,8 +96,8 @@ _ols_start_service() {
     fi
   fi
 
-  # Give OLS a moment to fully bind its ports
-  sleep 2
+  # Give OLS a moment to fully bind its ports (OLS admin UI takes ~5 s)
+  sleep 6
 
   # Verify process is up
   if systemctl is-active --quiet openlitespeed 2>/dev/null || \

@@ -52,6 +52,7 @@ _src os_detector.sh
 _src dependency_manager.sh
 _src firewall_config.sh
 _src rollback_manager.sh
+_src service_orchestrator.sh
 
 _hc() { source "${INSTALLER_DIR}/healthchecks/${1}"; }
 _hc check_webserver.sh
