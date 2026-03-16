@@ -1,79 +1,56 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  HS-Panel — Production Installer Orchestrator
-#  https://hostingsignal.in
-#
-#  Usage:
-#    curl -sL https://install.hostingsignal.in | sudo bash
-#    — OR —
-#    sudo bash installer/install.sh [OPTIONS]
-#
-#  Options:
-#    --skip-firewall     Skip firewall configuration
-#    --skip-services     Skip service installation (panel only)
-#    --skip-mail         Skip Postfix + Dovecot installation
-#    --skip-dns          Skip PowerDNS installation
-#    --dev               Development mode (relaxed checks)
-#    --unattended        Non-interactive mode
-#    --help              Show this help text
+# HostingSignal HS-Panel Native Installer
+# Core services run directly on the host OS (no Docker for core stack).
 # =============================================================================
 
 set -euo pipefail
 IFS=$'\n\t'
 
-# ─── Paths ──────────────────────────────────────────────────────────────────
 readonly INSTALLER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
-readonly LOG_FILE="/var/log/hspanel-install.log"
+readonly LOG_FILE="/var/log/hspanel_install.log"
 readonly CREDS_FILE="/root/hspanel_credentials.txt"
-readonly ENV_DIR="/etc/hostingsignal"
 readonly INSTALL_START="$(date '+%Y-%m-%d %H:%M:%S')"
 
-# ─── Default flags ───────────────────────────────────────────────────────────
 SKIP_FIREWALL=false
-SKIP_SERVICES=false
 SKIP_MAIL=false
 SKIP_DNS=false
-DEV_MODE=false
 UNATTENDED=false
 
-# ─── Source core modules ─────────────────────────────────────────────────────
-_src() { source "${INSTALLER_DIR}/core/${1}"; }
+# Global install targets
+export HSPANEL_INSTALL_DIR="${HSPANEL_INSTALL_DIR:-/opt/hostingsignal}"
+export HSPANEL_ENV_FILE="${HSPANEL_ENV_FILE:-/opt/hostingsignal/deployment/hostingsignal-devapi.production.env}"
+export HSPANEL_CREDS_FILE="${HSPANEL_CREDS_FILE:-$CREDS_FILE}"
 
+_src() { source "${INSTALLER_DIR}/core/${1}"; }
 _src logger.sh
 _src os_detector.sh
 _src dependency_manager.sh
 _src firewall_config.sh
 _src rollback_manager.sh
-_src service_orchestrator.sh
 
-# ─── Source health checks ─────────────────────────────────────────────────────
 _hc() { source "${INSTALLER_DIR}/healthchecks/${1}"; }
-
-# Helper shared by health-check scripts
-_port_open() {
-  local port="$1"
-  (echo >/dev/tcp/127.0.0.1/"$port") &>/dev/null
-}
-
 _hc check_webserver.sh
 _hc check_database.sh
 _hc check_mail.sh
 _hc check_dns.sh
 _hc check_panel_api.sh
 
-# ─── Parse arguments ─────────────────────────────────────────────────────────
+_port_open() {
+  local port="$1"
+  (echo >/dev/tcp/127.0.0.1/"$port") &>/dev/null
+}
+
 _usage() {
   cat <<EOF
-Usage: sudo bash install.sh [OPTIONS]
+Usage: sudo bash installer/install.sh [OPTIONS]
 
 Options:
-  --skip-firewall     Skip firewall configuration
-  --skip-services     Skip service installation (panel only)
-  --skip-mail         Skip Postfix + Dovecot
-  --skip-dns          Skip PowerDNS
-  --dev               Development / relaxed mode
-  --unattended        Non-interactive (no prompts)
-  --help              Show this help
+  --skip-firewall   Skip firewall configuration
+  --skip-mail       Skip Postfix + Dovecot + Rainloop
+  --skip-dns        Skip PowerDNS
+  --unattended      Non-interactive mode
+  --help            Show this help
 EOF
   exit 0
 }
@@ -81,332 +58,230 @@ EOF
 for arg in "$@"; do
   case "$arg" in
     --skip-firewall) SKIP_FIREWALL=true ;;
-    --skip-services) SKIP_SERVICES=true ;;
     --skip-mail)     SKIP_MAIL=true ;;
     --skip-dns)      SKIP_DNS=true ;;
-    --dev)           DEV_MODE=true ;;
     --unattended)    UNATTENDED=true ;;
     --help|-h)       _usage ;;
     *)               log_warning "Unknown option: $arg" ;;
   esac
 done
 
-# ─── Ensure log file exists ───────────────────────────────────────────────────
 mkdir -p "$(dirname "$LOG_FILE")"
 touch "$LOG_FILE"
+exec > >(tee -a "$LOG_FILE") 2>&1
 exec 2> >(tee -a "$LOG_FILE" >&2)
 
-# ─── Global trap ─────────────────────────────────────────────────────────────
 trap '_on_err "$LINENO" "$BASH_COMMAND"' ERR
-
 _on_err() {
   local line="$1"
   local cmd="$2"
-  log_error "FATAL: command failed at line $line: $cmd"
-  log_rollback "Starting rollback procedure…"
-  run_rollback 2>&1 | tee -a "$LOG_FILE"
-  log_error "Installation FAILED. See $LOG_FILE for details."
+  log_error "FATAL at line $line: $cmd"
+  run_rollback 2>/dev/null || true
+  log_error "Installer failed. Log: $LOG_FILE"
   exit 1
 }
 
-# ─── Step counter ────────────────────────────────────────────────────────────
 STEP_NUM=0
-STEP_TOTAL=9
-
+STEP_TOTAL=14
 _step() {
   (( STEP_NUM++ )) || true
   log_section "Step ${STEP_NUM}/${STEP_TOTAL} — ${1}"
 }
 
-# =============================================================================
-#  PHASES
-# =============================================================================
-
-# Phase 0 — Banner
-_phase_banner() {
-  clear 2>/dev/null || true
-  printf '%b' "${BOLD}${CYAN}"
-  cat <<'BANNER'
-  ██╗  ██╗███████╗    ██████╗  █████╗ ███╗   ██╗███████╗██╗
-  ██║  ██║██╔════╝    ██╔══██╗██╔══██╗████╗  ██║██╔════╝██║
-  ███████║███████╗    ██████╔╝███████║██╔██╗ ██║█████╗  ██║
-  ██╔══██║╚════██║    ██╔═══╝ ██╔══██║██║╚██╗██║██╔══╝  ██║
-  ██║  ██║███████║    ██║     ██║  ██║██║ ╚████║███████╗███████╗
-  ╚═╝  ╚═╝╚══════╝    ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═══╝╚══════╝╚══════╝
-BANNER
-  printf '%b' "${RESET}"
-  printf '%b\n' "  ${DIM}Production Hosting Control Panel — installer v1.0.0${RESET}"
-  printf '%b\n' "  ${DIM}https://hostingsignal.in${RESET}"
-  echo
-  printf '%b\n' "  ${YELLOW}Started at: ${INSTALL_START}${RESET}"
-  echo
-}
-
-# Phase 1 — Preflight
-_phase_preflight() {
-  _step "Preflight checks"
-
-  # Root check
+_preflight() {
   if [[ "$(id -u)" -ne 0 ]]; then
-    log_error "This installer must be run as root."
+    log_error "Run installer as root."
     exit 1
   fi
-  log_success "Running as root"
 
-  # Disk space (>= 5 GB free on /)
-  local free_kb
-  free_kb="$(df -k / | awk 'NR==2{print $4}')"
-  if [[ "$free_kb" -lt 5242880 ]]; then
-    log_error "Insufficient disk space. Need >= 5 GB free on /, have $(( free_kb / 1024 / 1024 )) GB."
+  # Hard requirements for bootstrap and package operations.
+  command -v bash >/dev/null 2>&1 || { log_error "bash is required"; exit 1; }
+  if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+    log_error "curl or wget is required for repository/bootstrap reachability checks"
     exit 1
   fi
-  log_success "Disk space OK ($(( free_kb / 1024 / 1024 )) GB free)"
 
-  # RAM >= 1 GB
-  local ram_mb
-  ram_mb="$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)"
-  if [[ "$ram_mb" -lt 1024 ]]; then
-    if $DEV_MODE; then
-      log_warning "RAM < 1 GB ($ram_mb MB) — continuing in dev mode"
-    else
-      log_error "Insufficient RAM. Need >= 1 GB, have ${ram_mb} MB."
-      exit 1
-    fi
+  if is_wsl; then
+    log_warning "WSL environment detected. Docker Desktop must be running with WSL integration enabled."
   fi
-  log_success "RAM OK (${ram_mb} MB)"
 
-  # Internet connectivity
-  if ! curl -s --connect-timeout 5 https://1.1.1.1 &>/dev/null; then
-    log_error "No internet connectivity detected."
+  # Strict repository reachability checks.
+  local repo_ok=0
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --max-time 8 "https://github.com/limbanidhairya/hostingsignal" >/dev/null 2>&1 && repo_ok=1 || true
+    curl -fsSL --max-time 8 "https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/installer/install.sh" >/dev/null 2>&1 && repo_ok=1 || true
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO- --timeout=8 "https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/installer/install.sh" >/dev/null 2>&1 && repo_ok=1 || true
+  fi
+
+  if [[ "$repo_ok" -ne 1 ]]; then
+    log_error "Unable to reach HostingSignal GitHub repository/raw installer URLs"
     exit 1
   fi
-  log_success "Internet connectivity OK"
 
-  # Detect OS
-  detect_os
-  assert_supported_os
-  print_os_info
-
-  # Confirm (interactive mode)
   if ! $UNATTENDED; then
-    echo
-    printf '%b' "  ${BOLD}Proceed with installation? [y/N] ${RESET}"
+    printf '%b' "${BOLD}Proceed with native HS-Panel installation? [y/N] ${RESET}"
     local confirm
     read -r confirm
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-      log_warning "Installation cancelled by user."
-      exit 0
-    fi
+    [[ "$confirm" =~ ^[Yy]$ ]] || { log_warning "Installation cancelled"; exit 0; }
   fi
 }
 
-# Phase 2 — System update + common deps
-_phase_dependencies() {
-  _step "System update and common dependencies"
-  update_system
-  install_common_dependencies
-  install_nodejs
+_configure_selinux_for_alma() {
+  if [[ "${OS_ID:-}" != "almalinux" ]]; then
+    return 0
+  fi
+  if ! command -v getenforce >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local mode
+  mode="$(getenforce 2>/dev/null || echo Disabled)"
+  log_info "SELinux mode: ${mode}"
+
+  if [[ "$mode" == "Enforcing" || "$mode" == "Permissive" ]]; then
+    if ! command -v semanage >/dev/null 2>&1; then
+      dnf install -y policycoreutils-python-utils >/dev/null 2>&1 || true
+    fi
+
+    # Allow web stack network/database relay paths commonly needed by HS-Panel.
+    setsebool -P httpd_can_network_connect 1 >/dev/null 2>&1 || true
+    setsebool -P httpd_can_network_connect_db 1 >/dev/null 2>&1 || true
+
+    if command -v semanage >/dev/null 2>&1; then
+      semanage port -a -t http_port_t -p tcp 2086 2>/dev/null || semanage port -m -t http_port_t -p tcp 2086 2>/dev/null || true
+      semanage port -a -t http_port_t -p tcp 2087 2>/dev/null || semanage port -m -t http_port_t -p tcp 2087 2>/dev/null || true
+      semanage port -a -t http_port_t -p tcp 3000 2>/dev/null || semanage port -m -t http_port_t -p tcp 3000 2>/dev/null || true
+      semanage port -a -t http_port_t -p tcp 8090 2>/dev/null || semanage port -m -t http_port_t -p tcp 8090 2>/dev/null || true
+    fi
+
+    log_success "SELinux policy adjustments applied for AlmaLinux"
+  fi
 }
 
-# Phase 3 — Services (dependency-ordered)
-_phase_services() {
-  $SKIP_SERVICES && { log_warning "Skipping service installation (--skip-services)"; return 0; }
-
-  _step "Service installation"
-
-  print_dependency_graph
-
-  # Source all service installers
+_install_services_native() {
   local svc_dir="${INSTALLER_DIR}/services"
   source "${svc_dir}/install_openlitespeed.sh"
   source "${svc_dir}/install_mariadb.sh"
   source "${svc_dir}/install_php.sh"
   source "${svc_dir}/install_phpmyadmin.sh"
+  source "${svc_dir}/install_powerdns.sh"
   source "${svc_dir}/install_postfix.sh"
   source "${svc_dir}/install_dovecot.sh"
   source "${svc_dir}/install_rainloop.sh"
-  source "${svc_dir}/install_powerdns.sh"
 
-  # Determine installation order
-  local services=("openlitespeed" "mariadb" "php" "phpmyadmin")
-  if ! $SKIP_MAIL; then
-    services+=("postfix" "dovecot" "rainloop")
-  fi
+  _step "Detect OS"
+  detect_os
+  assert_supported_os
+  print_os_info
+  _configure_selinux_for_alma
+
+  _step "Update system"
+  update_system
+
+  _step "Install dependencies"
+  install_common_dependencies
+  install_nodejs 20
+
+  _step "Install OpenLiteSpeed"
+  install_openlitespeed
+
+  _step "Install MariaDB"
+  install_mariadb
+
+  _step "Install PHP versions"
+  install_php
+  install_phpmyadmin
+
   if ! $SKIP_DNS; then
-    services+=("powerdns")
+    _step "Install PowerDNS"
+    install_powerdns
+  else
+    _step "Install PowerDNS"
+    log_warning "Skipping PowerDNS (--skip-dns)"
   fi
 
-  local order
-  mapfile -t order < <(resolve_order "${services[@]}")
+  if ! $SKIP_MAIL; then
+    _step "Install Postfix + Dovecot"
+    install_postfix
+    install_dovecot
 
-  local total_svc="${#order[@]}"
-  local done_svc=0
-
-  for svc in "${order[@]}"; do
-    (( done_svc++ )) || true
-    progress_bar "$done_svc" "$total_svc" "Services"
-
-    if ! deps_satisfied "$svc"; then
-      log_error "Dependencies not satisfied for $svc — aborting"
-      mark_service_failed "$svc"
-      continue
-    fi
-
-    log_step "Installing: $svc"
-
-    case "$svc" in
-      openlitespeed) install_openlitespeed && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      mariadb)       install_mariadb      && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      php)           install_php          && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      phpmyadmin)    install_phpmyadmin   && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      postfix)       install_postfix      && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      dovecot)       install_dovecot      && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      rainloop)      install_rainloop     && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      powerdns)      install_powerdns     && mark_service_done "$svc" || mark_service_failed "$svc" ;;
-      *)             log_warning "Unknown service: $svc"; mark_service_skipped "$svc" ;;
-    esac
-  done
-
-  progress_bar "$total_svc" "$total_svc" "Services"
-  echo
+    _step "Install Rainloop"
+    install_rainloop
+  else
+    _step "Install Postfix + Dovecot"
+    log_warning "Skipping mail services (--skip-mail)"
+    _step "Install Rainloop"
+    log_warning "Skipping Rainloop (--skip-mail)"
+  fi
 }
 
-# Phase 4 — Panel
-_phase_panel() {
-  _step "HS-Panel installation"
-
-  source "${INSTALLER_DIR}/panel/configure_env.sh"
+_install_panel_native() {
   source "${INSTALLER_DIR}/panel/install_hspanel.sh"
+  source "${INSTALLER_DIR}/panel/configure_env.sh"
 
-  configure_env
+  _step "Clone HS-Panel repository"
   install_hspanel
+
+  _step "Generate env file"
+  configure_env
+
+  _step "Configure system services"
+  configure_hspanel_systemd
+
+  if ! $SKIP_FIREWALL; then
+    configure_firewall
+  else
+    log_warning "Skipping firewall configuration (--skip-firewall)"
+  fi
+
+  _step "Start services"
+  start_hspanel_services
 }
 
-# Phase 5 — Firewall
-_phase_firewall() {
-  $SKIP_FIREWALL && { log_warning "Skipping firewall configuration (--skip-firewall)"; return 0; }
-  _step "Firewall configuration"
-  configure_firewall
-}
+_run_health_checks() {
+  _step "Run health checks"
 
-# Phase 6 — Health checks
-_phase_healthchecks() {
-  _step "Running health checks"
-
-  local hc_pass=0
-  local hc_fail=0
-  local fail_list=()
-
-  _run_hc() {
-    local name="$1"
-    local fn="$2"
-    printf '%b' "  ${CYAN}[health]${RESET} ${name}…"
-    if $fn; then
-      (( hc_pass++ )) || true
-      printf '%b\n' " ${GREEN}PASS${RESET}"
-    else
-      (( hc_fail++ )) || true
-      fail_list+=("$name")
-      printf '%b\n' " ${RED}FAIL${RESET}"
-    fi
-  }
-
-  _run_hc "Web Server"  check_webserver
-  _run_hc "Database"    check_database
+  local failed=0
+  check_webserver || failed=1
+  check_database || failed=1
   if ! $SKIP_MAIL; then
-    _run_hc "Mail"      check_mail
+    check_mail || failed=1
   fi
   if ! $SKIP_DNS; then
-    _run_hc "DNS"       check_dns
+    check_dns || failed=1
   fi
-  _run_hc "Panel API"   check_panel_api
+  check_panel_api || failed=1
 
-  echo
-  log_kv "Health checks passed" "$hc_pass"
-  log_kv "Health checks failed" "$hc_fail"
-
-  if [[ "$hc_fail" -gt 0 ]]; then
-    log_warning "Failed components: ${fail_list[*]}"
-    log_warning "Panel installed but some services may be unhealthy. Check $LOG_FILE"
+  if [[ "$failed" -ne 0 ]]; then
+    log_warning "One or more health checks failed. Review: $LOG_FILE"
   fi
 }
 
-# Phase 7 — Summary
-_phase_summary() {
-  _step "Installation summary"
+_print_summary() {
+  local ip
+  ip="$(curl -fsSL --max-time 5 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
 
-  local end_time
-  end_time="$(date '+%Y-%m-%d %H:%M:%S')"
-
-  # Read credentials if present
-  local admin_pass=""
-  local db_pass=""
-  local api_key=""
-  if [[ -f "$CREDS_FILE" ]]; then
-    admin_pass="$(grep 'Panel Admin Password' "$CREDS_FILE" 2>/dev/null | awk -F': ' '{print $2}' | tr -d '[:space:]' || echo '<see /root/hspanel_credentials.txt>')"
-    db_pass="$(grep 'MariaDB App Password' "$CREDS_FILE" 2>/dev/null | awk -F': ' '{print $2}' | tr -d '[:space:]' || echo '<see /root/hspanel_credentials.txt>')"
-    api_key="$(grep 'Panel API Key' "$CREDS_FILE" 2>/dev/null | awk -F': ' '{print $2}' | tr -d '[:space:]' || echo '<see /root/hspanel_credentials.txt>')"
-    local ols_pass
-    ols_pass="$(grep 'OpenLiteSpeed Admin Password' "$CREDS_FILE" 2>/dev/null | awk -F': ' '{print $2}' | tr -d '[:space:]' || echo '<see /root/hspanel_credentials.txt>')"
-  fi
-
-  local server_ip
-  server_ip="$(curl -s --connect-timeout 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
-
-  printf '%b\n' ""
-  printf '%b\n' "${BOLD}${GREEN}╔══════════════════════════════════════════════════════════════╗${RESET}"
-  printf '%b\n' "${BOLD}${GREEN}║     HS-Panel Installation Complete!                         ║${RESET}"
-  printf '%b\n' "${BOLD}${GREEN}╚══════════════════════════════════════════════════════════════╝${RESET}"
   echo
-  printf '%b\n' "  ${BOLD}Access URLs${RESET}"
-  printf '%b\n' "  ──────────────────────────────────────────────"
-  printf '%b\n' "  Panel UI    : ${CYAN}http://${server_ip}:3000${RESET}"
-  printf '%b\n' "  Panel API   : ${CYAN}http://${server_ip}:2087${RESET}"
-  printf '%b\n' "  OLS Admin   : ${CYAN}https://${server_ip}:7080${RESET}"
-  printf '%b\n' "  phpMyAdmin  : ${CYAN}http://${server_ip}/phpmyadmin${RESET}"
-  printf '%b\n' "  Webmail     : ${CYAN}http://${server_ip}/webmail${RESET}"
-  echo
-  printf '%b\n' "  ${BOLD}Credentials${RESET}"
-  printf '%b\n' "  ──────────────────────────────────────────────"
-  printf '%b\n' "  Panel Admin Pass    : ${YELLOW}${admin_pass}${RESET}"
-  printf '%b\n' "  MariaDB App Pass    : ${YELLOW}${db_pass}${RESET}"
-  printf '%b\n' "  Panel API Key       : ${YELLOW}${api_key}${RESET}"
-  if [[ -n "${ols_pass:-}" ]]; then
-    printf '%b\n' "  OLS Admin Pass      : ${YELLOW}${ols_pass}${RESET}"
-  fi
-  echo
-  printf '%b\n' "  ${BOLD}Important files${RESET}"
-  printf '%b\n' "  ──────────────────────────────────────────────"
-  printf '%b\n' "  Credentials : ${DIM}${CREDS_FILE}${RESET}"
-  printf '%b\n' "  Env file    : ${DIM}${ENV_DIR}/hostingsignal-devapi.env${RESET}"
-  printf '%b\n' "  Install log : ${DIM}${LOG_FILE}${RESET}"
-  printf '%b\n' "  Panel dir   : ${DIM}/usr/local/hspanel${RESET}"
-  echo
-  printf '%b\n' "  ${BOLD}Timing${RESET}"
-  printf '%b\n' "  ──────────────────────────────────────────────"
-  printf '%b\n' "  Started  : ${DIM}${INSTALL_START}${RESET}"
-  printf '%b\n' "  Finished : ${DIM}${end_time}${RESET}"
-  echo
-  printf '%b\n' "  ${DIM}Need help? https://docs.hostingsignal.in${RESET}"
-  printf '%b\n' "  ${DIM}Support:   support@hostingsignal.in${RESET}"
-  echo
+  printf '%b\n' "${BOLD}${GREEN}HS-Panel Installed Successfully${RESET}"
+  log_kv "Panel URL" "http://${ip}:2086"
+  log_kv "Panel HTTPS" "https://${ip}:2087"
+  log_kv "API" "http://${ip}:3000"
+  log_kv "OpenLiteSpeed Admin" "http://${ip}:8090"
+  log_kv "phpMyAdmin" "http://${ip}/phpmyadmin"
+  log_kv "Webmail" "http://${ip}/webmail"
+  log_kv "Install log" "$LOG_FILE"
+  log_kv "Credentials" "$HSPANEL_CREDS_FILE"
+  log_kv "Started" "$INSTALL_START"
+  log_kv "Finished" "$(date '+%Y-%m-%d %H:%M:%S')"
 }
 
-# =============================================================================
-#  MAIN
-# =============================================================================
 main() {
-  # Redirect all output to log as well
-  exec > >(tee -a "$LOG_FILE") 2>&1
-
-  _phase_banner
-  _phase_preflight
-  _phase_dependencies
-  _phase_services
-  _phase_panel
-  _phase_firewall
-  _phase_healthchecks
-  _phase_summary
+  _preflight
+  _install_services_native
+  _install_panel_native
+  _run_health_checks
+  _print_summary
 }
 
 main "$@"

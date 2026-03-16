@@ -6,7 +6,7 @@ permalink: /install/
 
 # Universal Install Guide
 
-Use this page for both production VPS install and local sandbox install.
+Use this page for native production VPS install and optional local sandbox install.
 
 ## One Command (Full Stack)
 
@@ -28,23 +28,26 @@ From a local repository checkout (production stack):
 sudo bash installer/install.sh --unattended
 ```
 
-From a local repository checkout (local dev Docker stack):
+From a local repository checkout (optional Docker sandbox only):
 
 ```bash
-bash ./install.sh --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
-This command:
+Production installer command installs core services natively on the host OS:
 
-- writes `configs/install-config.json`
-- renders `runtime/local-stack/docker-compose.yml`
-- prepares service workspaces under `services/`
-- starts the full selected profile set
+- OpenLiteSpeed
+- MariaDB
+- PHP (multi-version)
+- PowerDNS
+- Postfix + Dovecot + Rainloop
+- phpMyAdmin
+- HS-Panel services via systemd
 
 ## Core-Only Fallback (Local Dev)
 
 ```bash
-bash ./install.sh --local-dev --non-interactive --profile-set core --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 Use this when you want a lighter local stack.
@@ -65,25 +68,25 @@ curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/i
 
 ### Windows (WSL2 Ubuntu 24.04)
 
-First ensure Docker Desktop is running with WSL integration enabled for your distro, then:
+First ensure WSL networking and package repositories are reachable, then:
 
 ```bash
 sudo apt update && sudo apt install -y python3 python3-pip
 curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 ```
 
-If Docker is not installed inside WSL:
+If you specifically want the optional local Docker sandbox mode:
 
 ```bash
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER && newgrp docker
-curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
+python3 scripts/local_installer.py --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 ### Core-only quick run
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash -s -- --local-dev --non-interactive --profile-set core --web apache --db mariadb
+python3 scripts/local_installer.py --non-interactive --profile-set core --web apache --db mariadb
 ```
 
 ## Verify After Install

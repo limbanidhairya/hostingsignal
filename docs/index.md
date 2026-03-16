@@ -30,10 +30,10 @@ Production one command — no clone needed, runs directly from GitHub:
 curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 ```
 
-Local dev checkout variant:
+Optional local sandbox variant:
 
 ```bash
-bash ./install.sh --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 Need step-by-step guidance? Open [Universal Install Guide]({{ '/install/' | relative_url }}).
@@ -94,16 +94,16 @@ Need step-by-step guidance? Open [Universal Install Guide]({{ '/install/' | rela
 
 ## Install Quick Start
 
-Universal one-command install for the current repo-local sandbox:
+Native one-command install for production:
 
 ```bash
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 ```
 
-Core-only fallback:
+Optional local sandbox core-only fallback:
 
 ```bash
-bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 Full install runbook page:
@@ -114,9 +114,7 @@ Supported paths:
 
 - Ubuntu 22.04 / 24.04
 - Debian 12
-- Windows 10 / 11 via WSL2 Ubuntu 24.04
 - AlmaLinux 8 / 9 deployment target
-- Rocky Linux 8 / 9 deployment target
 
 ## GitHub Pages Status
 

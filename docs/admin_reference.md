@@ -34,16 +34,16 @@ Use this command to run the production master installer from GitHub:
 curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 ```
 
-Local dev checkout variant:
+Optional local sandbox variant:
 
 ```bash
-bash ./install.sh --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 Core-only fallback:
 
 ```bash
-bash ./install.sh --local-dev --non-interactive --profile-set core --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 Detailed install runbook:
@@ -52,9 +52,8 @@ Detailed install runbook:
 
 Prerequisites:
 
-- `python3`
-- `docker compose`
-- Git checkout of this repository
+- `sudo` root privileges
+- outbound access to package repositories and GitHub
 
 ## Supported OS Matrix
 
@@ -62,37 +61,28 @@ Prerequisites:
 |---|---|---|
 | Ubuntu 22.04 / 24.04 | Supported | Preferred native Linux path |
 | Debian 12 | Supported | Native Linux path |
-| AlmaLinux 8 / 9 | Deployment target | Use Linux deployment docs and validate service packages |
-| Rocky Linux 8 / 9 | Deployment target | Use Linux deployment docs and validate service packages |
-| Windows 10 / 11 | Supported through WSL2 | Use Ubuntu 24.04 in WSL and Docker Desktop integration |
+| AlmaLinux 8 / 9 | Supported | Native Linux path with SELinux policy tuning |
 
 ## Windows via WSL2
 
-Run inside Ubuntu WSL:
-
-```bash
-sudo apt update && sudo apt install -y python3 python3-pip docker-compose-plugin
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
-```
-
-If Docker is provided by Docker Desktop, enable WSL integration for the target distro first.
+WSL can be used for testing only. Production deployment target is native Linux.
 
 ## Linux Native
 
 Run on supported Linux hosts:
 
 ```bash
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 ```
 
 ## Core Runtime Ports
 
 | Service | Port |
 |---|---:|
-| Partner panel | `3000` |
-| Dev API | `2087` |
-| Core daemon | `2086` |
-| Core API | `2083` |
+| Panel HTTP | `2086` |
+| Panel HTTPS | `2087` |
+| Panel API | `3000` |
+| OpenLiteSpeed admin | `8090` |
 
 ## Release Snapshot
 

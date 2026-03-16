@@ -23,14 +23,14 @@ detect_os() {
       PKG_MANAGER="apt"
       SVC_MANAGER="systemctl"
       ;;
-    almalinux|rocky|centos|rhel|ol)
+    almalinux|rhel|ol)
       OS_FAMILY="rhel"
       PKG_MANAGER="dnf"
       SVC_MANAGER="systemctl"
       ;;
     *)
       log_error "Unsupported OS: $OS_PRETTY_NAME"
-      log_error "Supported: Ubuntu 22.04/24.04, Debian 12, AlmaLinux 8/9, CentOS Stream 9"
+        log_error "Supported: Ubuntu 22.04/24.04, Debian 12, AlmaLinux 8/9"
       exit 1
       ;;
   esac
@@ -46,13 +46,12 @@ assert_supported_os() {
     ubuntu:22.04|ubuntu:24.04)      supported=1 ;;
     debian:12)                       supported=1 ;;
     almalinux:8|almalinux:9)        supported=1 ;;
-    rocky:8|rocky:9)                 supported=1 ;;
-    centos:9|centos:*)               supported=1 ;;
   esac
 
   if [[ "$supported" -eq 0 ]]; then
-    log_warning "OS '$OS_PRETTY_NAME' is not in the verified support matrix."
-    log_warning "Installation may succeed but is not officially tested."
+    log_error "OS '$OS_PRETTY_NAME' is not in the support matrix."
+    log_error "Supported: Ubuntu 22.04/24.04, Debian 12, AlmaLinux 8/9"
+    exit 1
   fi
 
   log_success "Detected OS: $OS_PRETTY_NAME (family: $OS_FAMILY)"

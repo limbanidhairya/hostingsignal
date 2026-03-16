@@ -8,6 +8,8 @@ _COMMON_PKGS_DEBIAN=(
   software-properties-common ca-certificates apt-transport-https
   python3 python3-pip python3-venv
   build-essential make gcc
+  netcat-openbsd quota
+  sqlite3
   net-tools dnsutils bind9-utils
   cron logrotate sudo
 )
@@ -17,6 +19,8 @@ _COMMON_PKGS_RHEL=(
   ca-certificates
   python3 python3-pip
   gcc make
+  nc quota
+  sqlite
   net-tools bind-utils
   cronie logrotate sudo
   epel-release

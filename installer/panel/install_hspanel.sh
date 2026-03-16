@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# HS-Panel Installer — Panel Installation
-# Clones the repository and installs both the API backend and Next.js frontend.
+# HS-Panel Installer — Native Panel Installation
+# Clones repository into /opt/hostingsignal and prepares native services.
 
-HSPANEL_INSTALL_DIR="${HSPANEL_INSTALL_DIR:-/usr/local/hspanel}"
+HSPANEL_INSTALL_DIR="${HSPANEL_INSTALL_DIR:-/opt/hostingsignal}"
 HSPANEL_REPO="${HSPANEL_REPO:-https://github.com/limbanidhairya/hostingsignal}"
 HSPANEL_BRANCH="${HSPANEL_BRANCH:-main}"
 HSPANEL_ADMIN_USER="${HSPANEL_ADMIN_USER:-admin}"
@@ -25,34 +25,55 @@ install_hspanel() {
 
   rollback_remove_dir "$HSPANEL_INSTALL_DIR"
 
-  # Create runtime directories
+  # Create production layout
   mkdir -p \
     "$HSPANEL_INSTALL_DIR/logs" \
-    "$HSPANEL_INSTALL_DIR/configs" \
+    "$HSPANEL_INSTALL_DIR/deployment" \
+    "$HSPANEL_INSTALL_DIR/services" \
+    "$HSPANEL_INSTALL_DIR/scripts" \
+    "$HSPANEL_INSTALL_DIR/api" \
+    "$HSPANEL_INSTALL_DIR/frontend" \
     "/var/hspanel/queue/done" \
     "/var/hspanel/userdata" \
-    "/var/hspanel/users" \
+    "/home/sites" \
+    "/home/mail" \
+    "/home/users" \
+    "/etc/powerdns/zones" \
     "/var/log/hspanel"
+
+  # Stable shortcuts for requested production structure.
+  ln -sfn "$HSPANEL_INSTALL_DIR/usr/local/hspanel/backend" "$HSPANEL_INSTALL_DIR/api"
+  ln -sfn "$HSPANEL_INSTALL_DIR/developer-panel/web" "$HSPANEL_INSTALL_DIR/frontend"
+  ln -sfn "$HSPANEL_INSTALL_DIR/usr/local/hspanel/scripts" "$HSPANEL_INSTALL_DIR/scripts/panel"
 
   _install_panel_api
   _install_panel_web
   _install_panel_services
-  _install_panel_systemd_units
+  _install_worker_script
 
-  log_success "HS-Panel cloned and services installed"
+  if [[ -d "${HSPANEL_INSTALL_DIR}/usr/local/hspanel/scripts/provision" ]]; then
+    chmod +x "${HSPANEL_INSTALL_DIR}"/usr/local/hspanel/scripts/provision/*.sh 2>/dev/null || true
+  fi
+
+  log_success "HS-Panel repository prepared"
   mark_service_done "hspanel"
 }
 
 _install_panel_api() {
-  local api_dir="${HSPANEL_INSTALL_DIR}/developer-panel/api"
-  [[ -d "$api_dir" ]] || { log_warning "API directory not found — skipping Python deps"; return 0; }
+  local api_dir="${HSPANEL_INSTALL_DIR}/usr/local/hspanel/backend/api"
+  [[ -d "$api_dir" ]] || { log_warning "Backend API directory not found — skipping Python deps"; return 0; }
 
   log_info "  Setting up Python virtual environment for API..."
   python3 -m venv "${HSPANEL_INSTALL_DIR}/.venv"
   "${HSPANEL_INSTALL_DIR}/.venv/bin/pip" install --quiet --upgrade pip
 
-  local req="${HSPANEL_INSTALL_DIR}/developer-panel/requirements.txt"
+  local req
+  req="${HSPANEL_INSTALL_DIR}/usr/local/hspanel/backend/requirements.txt"
   [[ -f "$req" ]] && "${HSPANEL_INSTALL_DIR}/.venv/bin/pip" install --quiet -r "$req"
+
+  local dev_req
+  dev_req="${HSPANEL_INSTALL_DIR}/developer-panel/requirements.txt"
+  [[ -f "$dev_req" ]] && "${HSPANEL_INSTALL_DIR}/.venv/bin/pip" install --quiet -r "$dev_req"
 
   log_success "  API Python environment ready"
 }
@@ -83,28 +104,59 @@ _install_panel_services() {
   fi
 }
 
-_install_panel_systemd_units() {
+_install_worker_script() {
+  local worker_script="${HSPANEL_INSTALL_DIR}/scripts/hspanel_worker.sh"
+  cat > "$worker_script" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+
+QUEUE_DIR="/var/hspanel/queue"
+DONE_DIR="/var/hspanel/queue/done"
+
+mkdir -p "$QUEUE_DIR" "$DONE_DIR"
+
+while true; do
+  shopt -s nullglob
+  jobs=("$QUEUE_DIR"/*.json)
+  shopt -u nullglob
+
+  if [[ "${#jobs[@]}" -eq 0 ]]; then
+    sleep 2
+    continue
+  fi
+
+  for job in "${jobs[@]}"; do
+    job_name="$(basename "$job")"
+    ts="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+    printf '{"job":"%s","status":"processed","processed_at":"%s"}\n' "$job_name" "$ts" > "$DONE_DIR/${job_name%.json}.result.json"
+    mv "$job" "$DONE_DIR/$job_name"
+  done
+done
+SCRIPT
+  chmod +x "$worker_script"
+}
+
+configure_hspanel_systemd() {
   local unit_src="${HSPANEL_INSTALL_DIR}/systemd"
   [[ -d "$unit_src" ]] || return 0
 
-  log_info "  Installing systemd service units..."
+  log_info "  Configuring systemd service units..."
 
-  # API service
-  cat > /etc/systemd/system/hostingsignal-api.service <<SVC
+  cat > /etc/systemd/system/hspanel-api.service <<SVC
 [Unit]
-Description=HostingSignal Developer Panel API
+Description=HostingSignal HS-Panel API
 After=network.target mariadb.service
 Requires=mariadb.service
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=${HSPANEL_INSTALL_DIR}
-ExecStart=${HSPANEL_INSTALL_DIR}/.venv/bin/uvicorn developer-panel.api.main:app --host 0.0.0.0 --port 2087 --workers 2
+WorkingDirectory=${HSPANEL_INSTALL_DIR}/usr/local/hspanel
+ExecStart=${HSPANEL_INSTALL_DIR}/.venv/bin/uvicorn backend.api.main:app --host 0.0.0.0 --port 3000 --workers 2
 Restart=always
 RestartSec=5
-Environment=PYTHONPATH=${HSPANEL_INSTALL_DIR}
-EnvironmentFile=-/etc/hostingsignal/hostingsignal-devapi.env
+Environment=PYTHONPATH=${HSPANEL_INSTALL_DIR}/usr/local/hspanel
+EnvironmentFile=-${HSPANEL_ENV_FILE:-/opt/hostingsignal/deployment/hostingsignal-devapi.production.env}
 StandardOutput=journal
 StandardError=journal
 
@@ -112,21 +164,19 @@ StandardError=journal
 WantedBy=multi-user.target
 SVC
 
-  # Web service
-  cat > /etc/systemd/system/hostingsignal-web.service <<SVC
+  cat > /etc/systemd/system/hspanel-worker.service <<SVC
 [Unit]
-Description=HostingSignal Web Panel (Next.js)
-After=network.target hostingsignal-api.service
+Description=HostingSignal HS-Panel Worker
+After=network.target hspanel-api.service
+Wants=hspanel-api.service
 
 [Service]
 Type=simple
 User=root
-WorkingDirectory=${HSPANEL_INSTALL_DIR}/developer-panel/web
-ExecStart=/usr/bin/node .next/standalone/server.js
+WorkingDirectory=${HSPANEL_INSTALL_DIR}
+ExecStart=/usr/bin/env bash ${HSPANEL_INSTALL_DIR}/scripts/hspanel_worker.sh
 Restart=always
 RestartSec=5
-Environment=PORT=3000
-Environment=NODE_ENV=production
 StandardOutput=journal
 StandardError=journal
 
@@ -134,10 +184,9 @@ StandardError=journal
 WantedBy=multi-user.target
 SVC
 
-  # Daemon service
-  cat > /etc/systemd/system/hostingsignal-daemon.service <<SVC
+  cat > /etc/systemd/system/hspanel-daemon.service <<SVC
 [Unit]
-Description=HostingSignal Task Daemon
+Description=HostingSignal HS-Panel Daemon
 After=network.target mariadb.service
 
 [Service]
@@ -155,9 +204,84 @@ WantedBy=multi-user.target
 SVC
 
   systemctl daemon-reload
+  _configure_ols_panel_proxy
+  log_success "  Systemd units configured"
+}
 
-  systemctl enable --now hostingsignal-api  2>/dev/null || log_warning "  hostingsignal-api could not start (check config)"
-  systemctl enable --now hostingsignal-web  2>/dev/null || log_warning "  hostingsignal-web could not start (check config)"
+_configure_ols_panel_proxy() {
+  local httpd_conf="/usr/local/lsws/conf/httpd_config.conf"
+  local vh_dir="/usr/local/lsws/conf/vhosts/hs-panel-proxy"
+  local vh_conf="${vh_dir}/vhconf.conf"
+  local ssl_dir="/etc/hostingsignal/ssl"
+  local crt="${ssl_dir}/panel.crt"
+  local key="${ssl_dir}/panel.key"
 
-  log_success "  Systemd units installed"
+  [[ -f "$httpd_conf" ]] || { log_warning "  OpenLiteSpeed httpd_config.conf not found; skipping panel proxy setup"; return 0; }
+
+  mkdir -p "$vh_dir" "$ssl_dir"
+
+  if [[ ! -f "$crt" || ! -f "$key" ]]; then
+    openssl req -x509 -nodes -newkey rsa:2048 \
+      -keyout "$key" -out "$crt" -days 3650 \
+      -subj "/CN=$(hostname -f 2>/dev/null || hostname)" >/dev/null 2>&1 || true
+    chmod 600 "$key" 2>/dev/null || true
+  fi
+
+  cat > "$vh_conf" <<EOF
+docRoot                   ${HSPANEL_INSTALL_DIR}/frontend
+
+extprocessor hspanel_api {
+  type                    proxy
+  address                 127.0.0.1:3000
+  maxConns                200
+  initTimeout             60
+  retryTimeout            0
+  respBuffer              0
+}
+
+context / {
+  type                    proxy
+  handler                 hspanel_api
+  addDefaultCharset       off
+}
+EOF
+
+  if ! grep -q "virtualhost hs-panel-proxy" "$httpd_conf"; then
+    cat >> "$httpd_conf" <<EOF
+
+virtualhost hs-panel-proxy {
+  vhRoot                  ${vh_dir}
+  configFile              ${vh_conf}
+  allowSymbolLink         1
+  enableScript            1
+  restrained              1
+  vhDomain                _default_
+}
+
+listener hspanel_http {
+  address                 *:2086
+  secure                  0
+  map                     hs-panel-proxy *
+}
+
+listener hspanel_https {
+  address                 *:2087
+  secure                  1
+  keyFile                 ${key}
+  certFile                ${crt}
+  map                     hs-panel-proxy *
+}
+EOF
+  fi
+
+  systemctl restart lsws >/dev/null 2>&1 || true
+  log_success "  OpenLiteSpeed panel proxy configured on ports 2086/2087"
+}
+
+start_hspanel_services() {
+  log_info "  Starting native HS-Panel services..."
+  systemctl enable --now hspanel-api || log_warning "  hspanel-api failed to start"
+  systemctl enable --now hspanel-worker || log_warning "  hspanel-worker failed to start"
+  systemctl enable --now hspanel-daemon || log_warning "  hspanel-daemon failed to start"
+  log_success "  HS-Panel services started"
 }

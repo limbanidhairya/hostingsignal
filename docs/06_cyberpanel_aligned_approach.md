@@ -22,10 +22,10 @@ This keeps behavior predictable and makes install failures easier to isolate.
 
 ## Installer pipeline
 
-`install.sh` now defaults to the production master installer and supports explicit local-dev profile startup with `--local-dev`:
+`install.sh` now boots the native production installer path for HS-Panel core services:
 
-- `--local-dev --mode all --all`: generate, configure, and start the full local HostingSignal stack.
-- `--local-dev --profile-set core`: start only the lighter core subset.
+- Native core stack is installed directly on the OS (OpenLiteSpeed, MariaDB, PowerDNS, Postfix, Dovecot, Rainloop, phpMyAdmin).
+- Local Docker sandbox remains optional and is invoked using `scripts/local_installer.py`.
 
 Default local bundle root: `./local/services`
 
@@ -39,7 +39,7 @@ Default local bundle root: `./local/services`
 - Security: CSF, ModSecurity (OWASP CRS), ImunifyAV.
 - File management: panel file manager + Pure-FTPd.
 - PHP: multi-version packages (8.1/8.2/8.3 baseline).
-- Other: Docker, Git, Let's Encrypt.
+- Other: Git, Let's Encrypt.
 
 ## CyberPanel reference usage
 
@@ -56,11 +56,11 @@ Purpose:
 ## Operations examples
 
 ```bash
-# Universal full-stack run
-bash ./install.sh --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
+# Native production run
+curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | sudo bash
 
-# Core-only local stack
-bash ./install.sh --local-dev --non-interactive --profile-set core --web openlitespeed --db mariadb
+# Optional local sandbox core-only run
+python3 scripts/local_installer.py --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 ## Notes

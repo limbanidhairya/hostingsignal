@@ -159,22 +159,23 @@ curl -sL https://install.hostingsignal.in | sudo bash
 | PowerDNS | Latest | Authoritative DNS + MySQL backend |
 | HS-Panel | Current | Control panel API + Web UI |
 
-**Supported OS:** Ubuntu 22.04/24.04, Debian 12, AlmaLinux 8/9, Rocky Linux 8/9, CentOS Stream 9
+**Supported OS:** Ubuntu 22.04/24.04, Debian 12, AlmaLinux 8/9
 
 **Installer flags:**
 ```bash
 sudo bash installer/install.sh --skip-mail --skip-dns   # minimal
 sudo bash installer/install.sh --unattended              # non-interactive 
-sudo bash installer/install.sh --skip-firewall --dev     # development
+sudo bash installer/install.sh --skip-firewall           # keep firewall unchanged
 ```
 
 Credentials are written to `/root/hspanel_credentials.txt` after install.
 
 | Access URL | Purpose |
 |---|---|
-| `http://<IP>:3000` | HS-Panel UI |
-| `http://<IP>:2087` | Panel API |
-| `https://<IP>:7080` | OpenLiteSpeed Admin |
+| `http://<IP>:2086` | HS-Panel UI |
+| `https://<IP>:2087` | HS-Panel HTTPS |
+| `http://<IP>:3000` | Panel API |
+| `http://<IP>:8090` | OpenLiteSpeed Admin |
 | `http://<IP>/phpmyadmin` | phpMyAdmin |
 | `http://<IP>/webmail` | SnappyMail Webmail |
 
@@ -184,24 +185,18 @@ Full install guide: [docs.hostingsignal.in/install/](https://docs.hostingsignal.
 
 ## ⚙️ Local Dev Install (Docker Compose)
 
-Universal one-command install — no clone needed, runs directly from GitHub:
+Docker is not used for HS-Panel core services. For local Docker sandbox testing, run the local installer directly:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/limbanidhairya/hostingsignal/main/install.sh | bash -s -- --local-dev --mode all --all --non-interactive --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --mode all --all --non-interactive --web openlitespeed --db mariadb
 ```
 
 This fetches the latest installer, clones the repo into a temp directory, generates the full Docker Compose stack, writes `configs/install-config.json`, and starts the selected profile set.
 
-Local checkout variant:
-
-```bash
-bash ./install.sh --mode all --all --non-interactive --web openlitespeed --db mariadb
-```
-
 Core-only fallback:
 
 ```bash
-bash ./install.sh --non-interactive --profile-set core --web openlitespeed --db mariadb
+python3 scripts/local_installer.py --non-interactive --profile-set core --web openlitespeed --db mariadb
 ```
 
 Full install guide: [docs.hostingsignal.in/install/](https://docs.hostingsignal.in/install/)
