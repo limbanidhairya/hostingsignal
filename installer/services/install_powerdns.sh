@@ -8,6 +8,7 @@ PDNS_DB_PASSWD="${PDNS_DB_PASSWD:-}"
 PDNS_API_KEY="${PDNS_API_KEY:-}"
 PDNS_API_PORT="${PDNS_API_PORT:-8053}"
 PDNS_DB_PORT="${PDNS_DB_PORT:-}"
+PDNS_LOCAL_PORT="${PDNS_LOCAL_PORT:-}"
 
 install_powerdns() {
   log_info "Installing PowerDNS..."
@@ -22,6 +23,7 @@ install_powerdns() {
   [[ -z "$PDNS_API_KEY"   ]] && PDNS_API_KEY="$(openssl rand -hex 16)"
 
   _resolve_pdns_db_port
+  _resolve_pdns_local_port
 
   if [[ "$OS_FAMILY" == "debian" ]]; then
     _install_pdns_debian
@@ -38,7 +40,7 @@ install_powerdns() {
     return 1
   fi
 
-  log_success "PowerDNS installed (API port: $PDNS_API_PORT)"
+  log_success "PowerDNS installed (DNS port: $PDNS_LOCAL_PORT, API port: $PDNS_API_PORT)"
   mark_service_done "powerdns"
   rollback_stop_service "pdns"
 }
@@ -56,6 +58,21 @@ _resolve_pdns_db_port() {
 
   [[ -z "${PDNS_DB_PORT}" ]] && PDNS_DB_PORT="3306"
   log_info "[PowerDNS] Using MariaDB port ${PDNS_DB_PORT}"
+}
+
+_resolve_pdns_local_port() {
+  if [[ -n "${PDNS_LOCAL_PORT}" ]]; then
+    log_info "[PowerDNS] Using configured DNS port ${PDNS_LOCAL_PORT}"
+    return 0
+  fi
+
+  if ss -tuln 2>/dev/null | awk '{print $5}' | grep -Eq ':53$|:53[^0-9]'; then
+    PDNS_LOCAL_PORT="5300"
+    log_warning "[PowerDNS] Port 53 busy; switching DNS listener to ${PDNS_LOCAL_PORT}"
+  else
+    PDNS_LOCAL_PORT="53"
+    log_info "[PowerDNS] Port 53 is free"
+  fi
 }
 
 _install_pdns_debian() {
@@ -147,9 +164,9 @@ _configure_pdns() {
   cat > /etc/powerdns/pdns.conf <<CONF
 # HS-Panel PowerDNS configuration
 local-address=0.0.0.0
-local-port=53
-daemon=yes
-guardian=yes
+local-port=${PDNS_LOCAL_PORT}
+daemon=no
+guardian=no
 setuid=pdns
 setgid=pdns
 

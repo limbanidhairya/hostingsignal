@@ -3,6 +3,11 @@
 
 check_dns() {
   local status=0
+  local dns_port api_port
+  dns_port="$(grep -E '^local-port=' /etc/powerdns/pdns.conf 2>/dev/null | head -1 | cut -d= -f2 | tr -d ' ' || true)"
+  api_port="$(grep -E '^webserver-port=' /etc/powerdns/pdns.conf 2>/dev/null | head -1 | cut -d= -f2 | tr -d ' ' || true)"
+  [[ -z "$dns_port" ]] && dns_port=53
+  [[ -z "$api_port" ]] && api_port=8053
 
   # 1. Service
   if systemctl is-active --quiet pdns 2>/dev/null; then
@@ -13,18 +18,18 @@ check_dns() {
     return $status
   fi
 
-  # 2. TCP port 53
-  if _port_open 53; then
-    log_success "  [dns] port 53/tcp open"
+  # 2. TCP DNS port
+  if _port_open "$dns_port"; then
+    log_success "  [dns] port ${dns_port}/tcp open"
   else
-    log_error   "  [dns] port 53/tcp NOT open"
+    log_error   "  [dns] port ${dns_port}/tcp NOT open"
     status=1
   fi
 
-  # 3. UDP port 53 — use dig if available
+  # 3. UDP DNS query — use dig if available
   if command -v dig &>/dev/null; then
     local dig_out
-    dig_out="$(dig @127.0.0.1 localhost A +time=2 +tries=1 2>&1 || true)"
+    dig_out="$(dig @127.0.0.1 -p "$dns_port" localhost A +time=2 +tries=1 2>&1 || true)"
     if echo "$dig_out" | grep -q "status: NOERROR\|status: NXDOMAIN"; then
       log_success "  [dns] DNS UDP query responded"
     else
@@ -58,7 +63,7 @@ check_dns() {
   if [[ -n "$api_key" ]]; then
     local http_code
     http_code="$(curl -s -o /dev/null -w '%{http_code}' \
-      -H "X-API-Key: $api_key" http://127.0.0.1:8053/api/v1/servers/localhost 2>/dev/null || echo 000)"
+      -H "X-API-Key: $api_key" "http://127.0.0.1:${api_port}/api/v1/servers/localhost" 2>/dev/null || echo 000)"
     if [[ "$http_code" == "200" ]]; then
       log_success "  [dns] PowerDNS API responding (HTTP 200)"
     else
