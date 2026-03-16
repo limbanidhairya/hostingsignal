@@ -33,6 +33,13 @@ SKIP_FIREWALL=false
 SKIP_MAIL=false
 SKIP_DNS=false
 UNATTENDED=false
+AUTO_YES=false
+
+if [ ! -t 0 ]; then
+  NON_INTERACTIVE=true
+else
+  NON_INTERACTIVE=false
+fi
 
 # Global install targets
 export HSPANEL_INSTALL_DIR="${HSPANEL_INSTALL_DIR:-/opt/hostingsignal}"
@@ -63,6 +70,7 @@ _usage() {
 Usage: sudo bash installer/install.sh [OPTIONS]
 
 Options:
+  -y, --yes         Auto-confirm installation
   --skip-firewall   Skip firewall configuration
   --skip-mail       Skip Postfix + Dovecot + Rainloop
   --skip-dns        Skip PowerDNS
@@ -74,6 +82,7 @@ EOF
 
 for arg in "$@"; do
   case "$arg" in
+    -y|--yes)        AUTO_YES=true ;;
     --skip-firewall) SKIP_FIREWALL=true ;;
     --skip-mail)     SKIP_MAIL=true ;;
     --skip-dns)      SKIP_DNS=true ;;
@@ -136,7 +145,11 @@ _preflight() {
     exit 1
   fi
 
-  if ! $UNATTENDED; then
+  if $AUTO_YES || $UNATTENDED || $NON_INTERACTIVE; then
+    if $NON_INTERACTIVE && ! $AUTO_YES && ! $UNATTENDED; then
+      log_info "[HostingSignal] Non-interactive mode detected. Continuing automatically."
+    fi
+  else
     printf '%b' "${BOLD}Proceed with native HS-Panel installation? [y/N] ${RESET}"
     local confirm
     read -r confirm
