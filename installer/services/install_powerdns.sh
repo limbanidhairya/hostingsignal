@@ -95,7 +95,7 @@ _install_pdns_rhel() {
 }
 
 _create_pdns_db() {
-  mysql --defaults-file=/root/.my.cnf <<SQL
+  mysql --defaults-file=/root/.my.cnf --port="${PDNS_DB_PORT}" <<SQL
 CREATE DATABASE IF NOT EXISTS \`${PDNS_DB}\` CHARACTER SET utf8;
 CREATE USER IF NOT EXISTS '${PDNS_DB_USER}'@'localhost' IDENTIFIED BY '${PDNS_DB_PASSWD}';
 CREATE USER IF NOT EXISTS '${PDNS_DB_USER}'@'127.0.0.1' IDENTIFIED BY '${PDNS_DB_PASSWD}';
@@ -103,6 +103,12 @@ GRANT ALL PRIVILEGES ON \`${PDNS_DB}\`.* TO '${PDNS_DB_USER}'@'localhost';
 GRANT ALL PRIVILEGES ON \`${PDNS_DB}\`.* TO '${PDNS_DB_USER}'@'127.0.0.1';
 FLUSH PRIVILEGES;
 SQL
+
+  # Idempotency guard: if schema already exists, skip import safely.
+  if mysql --defaults-file=/root/.my.cnf --port="${PDNS_DB_PORT}" -Nse "SHOW TABLES IN \`${PDNS_DB}\` LIKE 'domains';" 2>/dev/null | grep -qx 'domains'; then
+    log_info "[HS-Panel] PowerDNS schema already exists - skipping schema import"
+    return 0
+  fi
 
   # Import PowerDNS schema
   local schema_paths=(
@@ -113,17 +119,22 @@ SQL
   for path in "${schema_paths[@]}"; do
     if [[ -f "$path" ]]; then
       if [[ "$path" == *.gz ]]; then
-        zcat "$path" | mysql --defaults-file=/root/.my.cnf "$PDNS_DB"
+        if zcat "$path" | mysql --defaults-file=/root/.my.cnf --port="${PDNS_DB_PORT}" "$PDNS_DB"; then
+          log_info "PowerDNS schema imported from $path"
+          return 0
+        fi
       else
-        mysql --defaults-file=/root/.my.cnf "$PDNS_DB" < "$path"
+        if mysql --defaults-file=/root/.my.cnf --port="${PDNS_DB_PORT}" "$PDNS_DB" < "$path"; then
+          log_info "PowerDNS schema imported from $path"
+          return 0
+        fi
       fi
-      log_info "PowerDNS schema imported from $path"
-      return 0
+      log_warning "PowerDNS schema import failed from $path, trying next option"
     fi
   done
 
   # Inline schema fallback
-  mysql --defaults-file=/root/.my.cnf "$PDNS_DB" <<'SCHEMA'
+  mysql --defaults-file=/root/.my.cnf --port="${PDNS_DB_PORT}" "$PDNS_DB" <<'SCHEMA'
 CREATE TABLE IF NOT EXISTS domains (
   id INT AUTO_INCREMENT NOT NULL, name VARCHAR(255) NOT NULL, master VARCHAR(128) DEFAULT NULL,
   last_check INT DEFAULT NULL, type VARCHAR(6) NOT NULL, notified_serial INT UNSIGNED DEFAULT NULL,
@@ -142,7 +153,14 @@ CREATE TABLE IF NOT EXISTS records (
 CREATE INDEX nametype_index ON records(name,type);
 CREATE INDEX domain_id ON records(domain_id);
 SCHEMA
-  log_info "PowerDNS schema created (inline fallback)"
+
+  if mysql --defaults-file=/root/.my.cnf --port="${PDNS_DB_PORT}" -Nse "SHOW TABLES IN \`${PDNS_DB}\` LIKE 'domains';" 2>/dev/null | grep -qx 'domains'; then
+    log_info "PowerDNS schema created (inline fallback)"
+    return 0
+  fi
+
+  log_error "[HS-Panel] PowerDNS schema import failed and domains table is still missing"
+  return 1
 }
 
 _configure_pdns() {
