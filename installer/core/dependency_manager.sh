@@ -73,32 +73,30 @@ update_system() {
   if [[ "$OS_FAMILY" == "debian" ]]; then
     export DEBIAN_FRONTEND=noninteractive
 
-    # Pre-flight: if apt-get upgrade pulls in a MariaDB/MySQL update, the
-    # dpkg post-install script will try to (re)start the daemon.  If port 3306
-    # is already in use that start fails and dpkg aborts with error code 1.
-    # Stop any running MySQL/MariaDB now so the post-install hook can safely
-    # restart after the upgrade.
+    # Hard-purge any existing MySQL / MariaDB packages BEFORE running
+    # apt-get upgrade.  The upgrade may include a mariadb-server update whose
+    # dpkg post-install script immediately tries to (re)start mariadbd.  If
+    # port 3306 is already bound that start fails and dpkg returns error code 1,
+    # aborting the entire system update with a misleading error message.
+    # Purging first means apt-get upgrade simply installs a fresh package with
+    # no running daemon to conflict with.
+    log_info "[update_system] Removing any existing MySQL/MariaDB before upgrade..."
     for _svc in mariadb mysql mysqld; do
-      if systemctl is-active --quiet "$_svc" 2>/dev/null; then
-        log_warning "[update_system] Stopping ${_svc} before upgrade to avoid port-3306 conflict"
-        systemctl stop "$_svc" 2>/dev/null || true
-      fi
+      systemctl stop "$_svc" 2>/dev/null || true
     done
+    pkill -f mysqld 2>/dev/null || true
+    pkill -f mysql  2>/dev/null || true
+    apt-get remove --purge -y \
+      mariadb-server mariadb-client mariadb-common \
+      mysql-server mysql-client mysql-common \
+      2>/dev/null || true
+    apt-get autoremove -y 2>/dev/null || true
+    rm -f /etc/apt/sources.list.d/mariadb.list.old_* 2>/dev/null || true
 
     apt-get update -qq
     apt-get upgrade -y -qq \
       -o 'Dpkg::Options::=--force-confdef' \
       -o 'Dpkg::Options::=--force-confold'
-
-    # Restart MariaDB/MySQL if it was installed (the installer step will
-    # manage the full setup, but the DB should be up for any remaining
-    # upgrade post-install hooks that query it)
-    for _svc in mariadb mysql; do
-      if systemctl list-unit-files --type=service 2>/dev/null | grep -q "^${_svc}\.service"; then
-        systemctl start "$_svc" 2>/dev/null || true
-        break
-      fi
-    done
   else
     dnf update -y --skip-broken
   fi

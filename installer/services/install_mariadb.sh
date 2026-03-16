@@ -73,19 +73,13 @@ _mariadb_pre_install_cleanup() {
   pkill -f mysql  2>/dev/null || true
   sleep 1   # give processes a moment to exit
 
-  # ── Step 4: purge any broken/conflicting MariaDB or MySQL packages ─────────
+  # ── Step 4: always purge any existing MySQL/MariaDB packages ────────────
   if [[ "$OS_FAMILY" == "debian" ]]; then
     export DEBIAN_FRONTEND=noninteractive
-    # Record whether mariadb-server was already present; if so skip the purge
-    # so we don't wipe an existing working database on re-runs.
-    if dpkg -l mariadb-server 2>/dev/null | grep -q '^ii'; then
-      log_info "[MariaDB] Existing mariadb-server package found — skipping purge"
-    else
-      apt-get remove --purge -y \
-        mariadb-server mariadb-client \
-        mysql-server mysql-client 2>/dev/null || true
-      apt-get autoremove -y 2>/dev/null || true
-    fi
+    apt-get remove --purge -y \
+      mariadb-server mariadb-client mariadb-common \
+      mysql-server mysql-client mysql-common 2>/dev/null || true
+    apt-get autoremove -y 2>/dev/null || true
   fi
 
   # ── Step 5: remove stale/broken repo list files ───────────────────────────
