@@ -12,11 +12,11 @@ check_webserver() {
     status=1
   fi
 
-  # 2. Systemd unit check
-  if systemctl is-active --quiet lsws 2>/dev/null; then
-    log_success "  [webserver] systemd unit lsws.service is active"
+  # 2. Systemd unit check (use the real unit name; lsws.service is only an alias)
+  if systemctl is-active --quiet openlitespeed 2>/dev/null; then
+    log_success "  [webserver] systemd unit openlitespeed.service is active"
   else
-    log_warning "  [webserver] systemd unit lsws.service not active (may use init.d)"
+    log_warning "  [webserver] systemd unit openlitespeed.service not active (may use init.d)"
   fi
 
   # 3. Port 80 open

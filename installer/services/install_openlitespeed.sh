@@ -25,11 +25,36 @@ install_openlitespeed() {
   _configure_ols_admin
   _configure_ols_default_vhost
 
-  systemctl enable --now lsws
-  log_success "OpenLiteSpeed installed and started"
+  # Enable the real unit (lsws.service is only an alias and cannot be enabled)
+  systemctl enable openlitespeed
+  log_success "OpenLiteSpeed service enabled"
+
+  # Start the service
+  systemctl start openlitespeed
+
+  # Verify the service came up; fall back to the binary controller if systemd fails
+  if ! systemctl is-active --quiet openlitespeed; then
+    log_warning "[OpenLiteSpeed] systemd start failed — attempting manual start via lswsctrl"
+    /usr/local/lsws/bin/lswsctrl start 2>/dev/null || true
+    sleep 2
+    if ! systemctl is-active --quiet openlitespeed; then
+      echo "[ERROR] OpenLiteSpeed failed to start"
+      systemctl status openlitespeed --no-pager 2>/dev/null || true
+      return 1
+    fi
+  fi
+  log_success "OpenLiteSpeed running"
+
+  # Verify admin port 8090 is listening
+  if ss -tulnp 2>/dev/null | grep -q ':8090'; then
+    log_success "OpenLiteSpeed running on port 8090"
+  else
+    log_warning "[OpenLiteSpeed] port 8090 not yet listening — OLS may still be initialising"
+  fi
+
   mark_service_done "openlitespeed"
 
-  rollback_stop_service "lsws"
+  rollback_stop_service "openlitespeed"
 }
 
 _install_ols_debian() {
