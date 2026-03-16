@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .config import get_settings
-from .database import DevAdmin, get_db
+from .database import Admin, DevAdmin, get_db
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -21,7 +21,9 @@ settings = get_settings()
 
 
 class LoginRequest(BaseModel):
-    email: str
+    identifier: str | None = None
+    email: str | None = None
+    username: str | None = None
     password: str
 
 
@@ -73,14 +75,41 @@ async def get_current_admin(
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
-    """Authenticate developer/admin user against DB."""
-    result = await db.execute(select(DevAdmin).where(DevAdmin.email == body.email, DevAdmin.is_active == True))
-    admin = result.scalar_one_or_none()
-    if not admin:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    """Authenticate installer-seeded panel admin or existing dev admin user."""
+    identifier = (body.identifier or body.username or body.email or "").strip()
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Username or email is required")
 
-    if not pwd_context.verify(body.password, admin.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    panel_admin_result = await db.execute(select(Admin).where(Admin.username == identifier).limit(1))
+    panel_admin = panel_admin_result.scalar_one_or_none()
+
+    admin: DevAdmin | None = None
+    if panel_admin and pwd_context.verify(body.password, panel_admin.password_hash):
+        dev_admin_result = await db.execute(
+            select(DevAdmin).where(DevAdmin.username == panel_admin.username, DevAdmin.is_active == True).limit(1)
+        )
+        admin = dev_admin_result.scalar_one_or_none()
+        if admin is None:
+            admin = DevAdmin(
+                username=panel_admin.username,
+                email=settings.DEFAULT_ADMIN_EMAIL,
+                password_hash=panel_admin.password_hash,
+                role="admin",
+                is_active=True,
+            )
+            db.add(admin)
+            await db.commit()
+            await db.refresh(admin)
+    else:
+        result = await db.execute(
+            select(DevAdmin).where(
+                DevAdmin.is_active == True,
+                (DevAdmin.email == identifier) | (DevAdmin.username == identifier),
+            )
+        )
+        admin = result.scalar_one_or_none()
+        if not admin or not pwd_context.verify(body.password, admin.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
 
     admin.last_login = datetime.utcnow()
     await db.commit()

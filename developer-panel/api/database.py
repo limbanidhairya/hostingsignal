@@ -42,6 +42,14 @@ class DevAdmin(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Admin(Base):
+    __tablename__ = "admins"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(100), unique=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class ManagedServer(Base):
     __tablename__ = "managed_servers"
     id = Column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -164,9 +172,26 @@ async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # Ensure a deterministic default admin account for local/dev bootstrap.
+    # Ensure deterministic admin accounts for installer/bootstrap reruns.
     async with async_session() as session:
         from .auth import pwd_context
+
+        panel_admin_result = await session.execute(
+            select(Admin).where(Admin.username == settings.DEFAULT_ADMIN_USERNAME).limit(1)
+        )
+        panel_admin = panel_admin_result.scalar_one_or_none()
+        panel_changed = False
+
+        if panel_admin is None:
+            panel_admin = Admin(
+                username=settings.DEFAULT_ADMIN_USERNAME,
+                password_hash=pwd_context.hash(settings.DEFAULT_ADMIN_PASSWORD),
+            )
+            session.add(panel_admin)
+            panel_changed = True
+        elif not pwd_context.verify(settings.DEFAULT_ADMIN_PASSWORD, panel_admin.password_hash):
+            panel_admin.password_hash = pwd_context.hash(settings.DEFAULT_ADMIN_PASSWORD)
+            panel_changed = True
 
         admin_result = await session.execute(
             select(DevAdmin).where(DevAdmin.email == settings.DEFAULT_ADMIN_EMAIL).limit(1)
@@ -188,24 +213,24 @@ async def init_db():
                 is_active=True,
             )
             session.add(admin)
-            await session.commit()
-            return
+            panel_changed = True
+        else:
+            changed = False
+            if admin.email != settings.DEFAULT_ADMIN_EMAIL:
+                admin.email = settings.DEFAULT_ADMIN_EMAIL
+                changed = True
+            if admin.username != settings.DEFAULT_ADMIN_USERNAME:
+                admin.username = settings.DEFAULT_ADMIN_USERNAME
+                changed = True
+            if not admin.is_active:
+                admin.is_active = True
+                changed = True
+            if not pwd_context.verify(settings.DEFAULT_ADMIN_PASSWORD, admin.password_hash):
+                admin.password_hash = pwd_context.hash(settings.DEFAULT_ADMIN_PASSWORD)
+                changed = True
+            panel_changed = panel_changed or changed
 
-        changed = False
-        if admin.email != settings.DEFAULT_ADMIN_EMAIL:
-            admin.email = settings.DEFAULT_ADMIN_EMAIL
-            changed = True
-        if admin.username != settings.DEFAULT_ADMIN_USERNAME:
-            admin.username = settings.DEFAULT_ADMIN_USERNAME
-            changed = True
-        if not admin.is_active:
-            admin.is_active = True
-            changed = True
-        if not pwd_context.verify(settings.DEFAULT_ADMIN_PASSWORD, admin.password_hash):
-            admin.password_hash = pwd_context.hash(settings.DEFAULT_ADMIN_PASSWORD)
-            changed = True
-
-        if changed:
+        if panel_changed:
             await session.commit()
 
         if settings.AUTO_REGISTER_LOCAL_SERVER:

@@ -19,7 +19,7 @@ const clearStoredToken = () => {
 
 export default function LoginPage() {
     const router = useRouter();
-    const [email, setEmail] = useState("");
+    const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
@@ -50,7 +50,7 @@ export default function LoginPage() {
             const response = await fetch('/api/session/login', {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ identifier, password }),
             });
 
             const payload = await response.json();
@@ -111,20 +111,20 @@ export default function LoginPage() {
                 <div className="glass rounded-xl p-8 shadow-2xl">
                     <h2 className="text-xl font-semibold mb-6 text-white text-center">Login to your account</h2>
                     <form className="space-y-5" onSubmit={handleLogin}>
-                        {/* Email Field */}
+                        {/* Username Field */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
+                            <label className="text-sm font-medium text-slate-300 ml-1">Username or Email</label>
                             <div className="relative">
                                 <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">
-                                    mail
+                                    person
                                 </span>
                                 <input
                                     required
                                     className="w-full bg-[#0a1628]/50 border border-slate-700 focus:border-[#00d9ff] focus:ring-1 focus:ring-[#00d9ff] rounded-lg py-4 pl-12 pr-4 text-white placeholder:text-slate-600 transition-all outline-none"
-                                    placeholder="partner@hs-panel.com"
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="admin"
+                                    type="text"
+                                    value={identifier}
+                                    onChange={(e) => setIdentifier(e.target.value)}
                                 />
                             </div>
                         </div>

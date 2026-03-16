@@ -188,7 +188,7 @@ gmysql-password=${PDNS_DB_PASSWD}
 api=yes
 api-key=${PDNS_API_KEY}
 webserver=yes
-webserver-address=127.0.0.1
+webserver-address=0.0.0.0
 webserver-port=${PDNS_API_PORT}
 webserver-allow-from=127.0.0.1,::1
 

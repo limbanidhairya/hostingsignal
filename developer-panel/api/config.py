@@ -25,6 +25,7 @@ class Settings:
     DEFAULT_ADMIN_EMAIL: str = os.getenv("HSDEV_DEFAULT_ADMIN_EMAIL", "admin@hostingsignal.local")
     DEFAULT_ADMIN_USERNAME: str = os.getenv("HSDEV_DEFAULT_ADMIN_USERNAME", "admin")
     DEFAULT_ADMIN_PASSWORD: str = os.getenv("HSDEV_DEFAULT_ADMIN_PASSWORD", "Admin@123")
+    DEFAULT_ADMIN_LOGIN: str = os.getenv("HSDEV_DEFAULT_ADMIN_LOGIN", os.getenv("HSDEV_DEFAULT_ADMIN_USERNAME", "admin"))
 
     # Redis
     REDIS_URL: str = os.getenv("HSDEV_REDIS_URL", "redis://localhost:6379/2")

@@ -108,7 +108,13 @@ EOF
     sed -i "/^\[mysqld\]/a port = ${port}" "$cfg"
   fi
 
-  log_info "[HS-Panel] MariaDB configured to listen on port ${port}"
+  if grep -Eq '^[[:space:]]*bind-address[[:space:]]*=' "$cfg"; then
+    sed -i -E 's|^[[:space:]]*bind-address[[:space:]]*=.*|bind-address = 0.0.0.0|' "$cfg"
+  else
+    sed -i "/^\[mysqld\]/a bind-address = 0.0.0.0" "$cfg"
+  fi
+
+  log_info "[HS-Panel] MariaDB configured to listen on 0.0.0.0:${port}"
 }
 
 _mariadb_pre_install_cleanup() {

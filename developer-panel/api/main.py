@@ -96,6 +96,11 @@ async def health():
     return {"status": "healthy", "service": "developer-panel", "version": VERSION}
 
 
+@app.get("/health")
+async def health_root():
+    return {"status": "healthy", "service": "developer-panel", "version": VERSION}
+
+
 if __name__ == "__main__":
     import uvicorn
     # Enforcing Port 2087 for definitive HS-Panel API standard

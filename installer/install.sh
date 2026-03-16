@@ -284,23 +284,54 @@ _run_health_checks() {
   fi
   check_panel_api || failed=1
 
+  local runtime_ports=(2086 2087 3000 8090)
+  local missing_ports=()
+  for port in "${runtime_ports[@]}"; do
+    if ! ss -tulnp 2>/dev/null | awk '{print $5}' | grep -Eq ":${port}$|:${port}[^0-9]"; then
+      missing_ports+=("$port")
+    fi
+  done
+
+  if [[ "${#missing_ports[@]}" -gt 0 ]]; then
+    log_warning "Missing listener ports detected: ${missing_ports[*]}"
+    systemctl restart hspanel-api 2>/dev/null || true
+    systemctl restart hspanel-web 2>/dev/null || true
+    systemctl restart lsws 2>/dev/null || systemctl restart lshttpd 2>/dev/null || true
+    sleep 3
+  fi
+
+  local api_health ui_health ols_health
+  api_health="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/health 2>/dev/null || echo 000)"
+  ui_health="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:2086 2>/dev/null || echo 000)"
+  ols_health="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8090 2>/dev/null || echo 000)"
+  [[ "$api_health" == "200" ]] || log_warning "Panel API validation returned HTTP ${api_health}"
+  [[ "$ui_health" =~ ^(200|301|302|401|403)$ ]] || log_warning "Panel UI validation returned HTTP ${ui_health}"
+  [[ "$ols_health" =~ ^(200|301|302|401|403)$ ]] || log_warning "OpenLiteSpeed admin validation returned HTTP ${ols_health}"
+
   if [[ "$failed" -ne 0 ]]; then
     log_warning "One or more health checks failed. Review: $LOG_FILE"
   fi
 }
 
 _print_summary() {
-  local ip
-  ip="$(curl -fsSL --max-time 5 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
+  if declare -F _detect_network_info >/dev/null 2>&1; then
+    _detect_network_info
+  fi
 
   echo
   printf '%b\n' "${BOLD}${GREEN}HS-Panel Installed Successfully${RESET}"
-  log_kv "Panel URL" "http://${ip}:2086"
-  log_kv "Panel HTTPS" "https://${ip}:2087"
-  log_kv "API" "http://${ip}:3000"
-  log_kv "OpenLiteSpeed Admin" "http://${ip}:8090"
-  log_kv "phpMyAdmin" "http://${ip}/phpmyadmin"
-  log_kv "Webmail" "http://${ip}/webmail"
+  log_kv "Local Access" "http://localhost:2086/login"
+  log_kv "LAN Access" "http://${HSPANEL_PRIVATE_IP:-127.0.0.1}:2086/login"
+  log_kv "LAN HTTPS" "https://${HSPANEL_PRIVATE_IP:-127.0.0.1}:2087"
+  if [[ -n "${HSPANEL_PUBLIC_IP:-}" ]]; then
+    log_kv "Public Access" "http://${HSPANEL_PUBLIC_IP}:2086/login"
+  else
+    log_kv "Public Access" "Not reachable"
+  fi
+  log_kv "Panel API" "http://localhost:3000/health"
+  log_kv "OpenLiteSpeed Admin" "http://localhost:8090"
+  log_kv "phpMyAdmin" "http://${HSPANEL_PRIVATE_IP:-127.0.0.1}/phpmyadmin"
+  log_kv "Webmail" "http://${HSPANEL_PRIVATE_IP:-127.0.0.1}/webmail"
   log_kv "Install log" "$LOG_FILE"
   log_kv "Credentials" "$HSPANEL_CREDS_FILE"
   log_kv "Started" "$INSTALL_START"

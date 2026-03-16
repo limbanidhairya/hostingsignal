@@ -7,6 +7,7 @@ HSPANEL_REPO="${HSPANEL_REPO:-https://github.com/limbanidhairya/hostingsignal}"
 HSPANEL_BRANCH="${HSPANEL_BRANCH:-main}"
 HSPANEL_ADMIN_USER="${HSPANEL_ADMIN_USER:-admin}"
 HSPANEL_ADMIN_PASSWD="${HSPANEL_ADMIN_PASSWD:-}"
+HSPANEL_ADMIN_EMAIL="${HSPANEL_ADMIN_EMAIL:-admin@hostingsignal.local}"
 
 install_hspanel() {
   log_info "Installing HS-Panel from $HSPANEL_REPO..."
@@ -89,7 +90,9 @@ _install_panel_web() {
 
   log_info "  Installing Node.js dependencies and building web panel..."
   npm --prefix "$web_dir" ci --silent
-  npm --prefix "$web_dir" run build
+  HSDEV_INTERNAL_API_BASE="http://127.0.0.1:3000" \
+  NEXT_PUBLIC_HSDEV_API_BASE="/devapi" \
+    npm --prefix "$web_dir" run build
 
   log_success "  Web panel built"
 }
@@ -151,12 +154,37 @@ Requires=mariadb.service
 [Service]
 Type=simple
 User=root
-WorkingDirectory=${HSPANEL_INSTALL_DIR}/usr/local/hspanel
-ExecStart=${HSPANEL_INSTALL_DIR}/.venv/bin/uvicorn backend.api.main:app --host 0.0.0.0 --port 3000 --workers 2
+WorkingDirectory=${HSPANEL_INSTALL_DIR}/developer-panel
+ExecStart=${HSPANEL_INSTALL_DIR}/.venv/bin/uvicorn api.main:app --host 0.0.0.0 --port 3000 --workers 2
 Restart=always
 RestartSec=5
-Environment=PYTHONPATH=${HSPANEL_INSTALL_DIR}/usr/local/hspanel
+Environment=PYTHONPATH=${HSPANEL_INSTALL_DIR}/developer-panel
 EnvironmentFile=-${HSPANEL_ENV_FILE:-/opt/hostingsignal/deployment/hostingsignal-devapi.production.env}
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+SVC
+
+  cat > /etc/systemd/system/hspanel-web.service <<SVC
+[Unit]
+Description=HostingSignal HS-Panel Web UI
+After=network.target hspanel-api.service
+Wants=hspanel-api.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=${HSPANEL_INSTALL_DIR}/developer-panel/web
+Environment=PORT=3001
+Environment=HOSTNAME=0.0.0.0
+Environment=HSDEV_INTERNAL_API_BASE=http://127.0.0.1:3000
+Environment=NEXT_PUBLIC_HSDEV_API_BASE=/devapi
+EnvironmentFile=-${HSPANEL_ENV_FILE:-/opt/hostingsignal/deployment/hostingsignal-devapi.production.env}
+ExecStart=/usr/bin/node ${HSPANEL_INSTALL_DIR}/developer-panel/web/.next/standalone/server.js
+Restart=always
+RestartSec=5
 StandardOutput=journal
 StandardError=journal
 
@@ -230,6 +258,15 @@ _configure_ols_panel_proxy() {
   cat > "$vh_conf" <<EOF
 docRoot                   ${HSPANEL_INSTALL_DIR}/frontend
 
+extprocessor hspanel_web {
+  type                    proxy
+  address                 127.0.0.1:3001
+  maxConns                200
+  initTimeout             60
+  retryTimeout            0
+  respBuffer              0
+}
+
 extprocessor hspanel_api {
   type                    proxy
   address                 127.0.0.1:3000
@@ -239,9 +276,15 @@ extprocessor hspanel_api {
   respBuffer              0
 }
 
-context / {
+context /devapi {
   type                    proxy
   handler                 hspanel_api
+  addDefaultCharset       off
+}
+
+context / {
+  type                    proxy
+  handler                 hspanel_web
   addDefaultCharset       off
 }
 EOF
@@ -274,13 +317,14 @@ listener hspanel_https {
 EOF
   fi
 
-  systemctl restart lsws >/dev/null 2>&1 || true
+  systemctl restart lsws >/dev/null 2>&1 || systemctl restart lshttpd >/dev/null 2>&1 || true
   log_success "  OpenLiteSpeed panel proxy configured on ports 2086/2087"
 }
 
 start_hspanel_services() {
   log_info "  Starting native HS-Panel services..."
   systemctl enable --now hspanel-api || log_warning "  hspanel-api failed to start"
+  systemctl enable --now hspanel-web || log_warning "  hspanel-web failed to start"
   systemctl enable --now hspanel-worker || log_warning "  hspanel-worker failed to start"
   systemctl enable --now hspanel-daemon || log_warning "  hspanel-daemon failed to start"
   log_success "  HS-Panel services started"
