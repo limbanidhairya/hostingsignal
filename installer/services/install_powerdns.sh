@@ -78,28 +78,13 @@ _resolve_pdns_local_port() {
 _install_pdns_debian() {
   export DEBIAN_FRONTEND=noninteractive
 
-  # Use PowerDNS official repo
-  install -d /etc/apt/keyrings
-  curl -fsSL https://repo.powerdns.com/FD380FBB-pub.asc \
-    -o /etc/apt/keyrings/pdns.asc 2>/dev/null || true
+  # Remove stale/invalid PowerDNS repo entries from earlier runs.
+  rm -f /etc/apt/sources.list.d/powerdns.list 2>/dev/null || true
+  rm -f /etc/apt/preferences.d/pdns 2>/dev/null || true
 
-  local codename="${OS_CODENAME:-$(lsb_release -cs 2>/dev/null)}"
-  cat > /etc/apt/sources.list.d/powerdns.list <<SOURCES
-# PowerDNS repository
-deb [signed-by=/etc/apt/keyrings/pdns.asc] http://repo.powerdns.com/debian ${codename}-auth-48 main
-SOURCES
-
-  cat > /etc/apt/preferences.d/pdns <<PREF
-Package: pdns-*
-Pin: origin repo.powerdns.com
-Pin-Priority: 600
-PREF
-
-  apt-get update -qq 2>/dev/null || true
-  apt-get install -y -qq pdns-server pdns-backend-mysql 2>/dev/null || \
-    apt-get install -y -qq pdns-server pdns-backend-mysql || \
-    { log_warning "PowerDNS from official repo failed; falling back to distro packages..."; \
-      apt-get install -y -qq pdns-server pdns-backend-mysql; }
+  # Prefer distro packages for reliability across Ubuntu/Debian releases.
+  apt-get update -qq
+  apt-get install -y -qq pdns-server pdns-backend-mysql
 }
 
 _install_pdns_rhel() {
