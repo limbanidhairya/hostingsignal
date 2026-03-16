@@ -25,25 +25,89 @@ install_openlitespeed() {
   _configure_ols_admin
   _configure_ols_default_vhost
 
-  # Enable the real unit (lsws.service is only an alias and cannot be enabled)
-  systemctl enable openlitespeed
-  log_success "OpenLiteSpeed service enabled"
+  _ols_enable_service
+  _ols_start_service
 
-  # Start the service
-  systemctl start openlitespeed
+  mark_service_done "openlitespeed"
+  rollback_stop_service "openlitespeed"
+}
 
-  # Verify the service came up; fall back to the binary controller if systemd fails
-  if ! systemctl is-active --quiet openlitespeed; then
-    log_warning "[OpenLiteSpeed] systemd start failed — attempting manual start via lswsctrl"
-    /usr/local/lsws/bin/lswsctrl start 2>/dev/null || true
-    sleep 2
-    if ! systemctl is-active --quiet openlitespeed; then
-      echo "[ERROR] OpenLiteSpeed failed to start"
-      systemctl status openlitespeed --no-pager 2>/dev/null || true
-      return 1
+# ---------------------------------------------------------------------------
+# _ols_enable_service
+# ---------------------------------------------------------------------------
+# systemctl enable fails with "Refusing to operate on alias name or linked
+# unit file" when OLS is installed from the official LiteSpeed apt/yum repo,
+# because both lsws.service and openlitespeed.service are aliases for a
+# systemd-generated wrapper around the /etc/init.d/lsws SysV script.
+#
+# Strategy (tried in order):
+#   1. Enable by FragmentPath (absolute path avoids alias resolution).
+#   2. update-rc.d  — Debian / Ubuntu with SysV init script.
+#   3. chkconfig    — RHEL / AlmaLinux.
+#   4. Warn and continue — don't abort the install for a boot-time flag.
+# ---------------------------------------------------------------------------
+_ols_enable_service() {
+  local enabled=false
+
+  # 1. Try enabling by the real file path (skips alias check)
+  local fragment
+  fragment="$(systemctl show -p FragmentPath openlitespeed.service 2>/dev/null \
+    | cut -d= -f2 || true)"
+  if [[ -n "$fragment" && -f "$fragment" && "$fragment" != /run/systemd/* ]]; then
+    if systemctl enable "$fragment" 2>/dev/null; then
+      enabled=true
+      log_success "OpenLiteSpeed service enabled"
     fi
   fi
-  log_success "OpenLiteSpeed running"
+
+  # 2. init.d + update-rc.d (Debian/Ubuntu — official LiteSpeed repo installs
+  #    /etc/init.d/lsws and systemd generates a transient wrapper that cannot
+  #    be enabled via systemctl enable)
+  if ! $enabled && [[ -f /etc/init.d/lsws ]] && command -v update-rc.d &>/dev/null; then
+    update-rc.d lsws defaults 2>/dev/null || true
+    update-rc.d lsws enable  2>/dev/null || true
+    enabled=true
+    log_success "OpenLiteSpeed service enabled (via update-rc.d)"
+  fi
+
+  # 3. chkconfig — RHEL / AlmaLinux
+  if ! $enabled && command -v chkconfig &>/dev/null; then
+    chkconfig lsws on 2>/dev/null || true
+    enabled=true
+    log_success "OpenLiteSpeed service enabled (via chkconfig)"
+  fi
+
+  if ! $enabled; then
+    log_warning "[OpenLiteSpeed] Could not enable service at boot — will start manually"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# _ols_start_service — start OLS with layered fallbacks
+# ---------------------------------------------------------------------------
+_ols_start_service() {
+  # Try systemctl start (works even when enable is the one that fails)
+  if ! systemctl start openlitespeed 2>/dev/null; then
+    log_warning "[OpenLiteSpeed] systemd start failed — trying init.d script"
+    if [[ -f /etc/init.d/lsws ]]; then
+      /etc/init.d/lsws start 2>/dev/null || true
+    else
+      /usr/local/lsws/bin/lswsctrl start 2>/dev/null || true
+    fi
+  fi
+
+  # Give OLS a moment to fully bind its ports
+  sleep 2
+
+  # Verify process is up
+  if systemctl is-active --quiet openlitespeed 2>/dev/null || \
+     pgrep -x litespeed &>/dev/null; then
+    log_success "OpenLiteSpeed running"
+  else
+    echo "[ERROR] OpenLiteSpeed failed to start"
+    systemctl status openlitespeed --no-pager 2>/dev/null || true
+    return 1
+  fi
 
   # Verify admin port 8090 is listening
   if ss -tulnp 2>/dev/null | grep -q ':8090'; then
@@ -51,10 +115,6 @@ install_openlitespeed() {
   else
     log_warning "[OpenLiteSpeed] port 8090 not yet listening — OLS may still be initialising"
   fi
-
-  mark_service_done "openlitespeed"
-
-  rollback_stop_service "openlitespeed"
 }
 
 _install_ols_debian() {
