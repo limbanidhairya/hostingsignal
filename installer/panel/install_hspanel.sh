@@ -89,7 +89,7 @@ _install_panel_web() {
   fi
 
   log_info "  Installing Node.js dependencies and building web panel..."
-  npm --prefix "$web_dir" ci --silent
+  npm --prefix "$web_dir" install --silent
   HSDEV_INTERNAL_API_BASE="http://127.0.0.1:3000" \
   NEXT_PUBLIC_HSDEV_API_BASE="/devapi" \
     npm --prefix "$web_dir" run build
