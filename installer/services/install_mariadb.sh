@@ -189,7 +189,22 @@ _secure_mariadb() {
     mysqladmin --port="${MARIADB_PORT}" ping --silent 2>/dev/null && break || sleep 1
   done
 
-  mysql --port="${MARIADB_PORT}" -u root <<SQL
+  local auth_mode=""
+  if mysql --protocol=socket -u root -e "SELECT 1" >/dev/null 2>&1; then
+    auth_mode="socket"
+  elif command -v sudo >/dev/null 2>&1 && sudo -n mysql --protocol=socket -u root -e "SELECT 1" >/dev/null 2>&1; then
+    auth_mode="sudo-socket"
+  elif mysql --port="${MARIADB_PORT}" -u root -e "SELECT 1" >/dev/null 2>&1; then
+    auth_mode="tcp"
+  elif [[ -f /root/.my.cnf ]] && mysql --defaults-file=/root/.my.cnf --port="${MARIADB_PORT}" -e "SELECT 1" >/dev/null 2>&1; then
+    auth_mode="mycnf"
+  else
+    log_error "[MariaDB] Unable to authenticate as root (socket/tcp) to secure installation"
+    return 1
+  fi
+
+  if [[ "$auth_mode" == "socket" ]]; then
+    mysql --protocol=socket -u root <<SQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MARIADB_ROOT_PASSWD}';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
@@ -197,11 +212,40 @@ DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 SQL
+  elif [[ "$auth_mode" == "sudo-socket" ]]; then
+    sudo mysql --protocol=socket -u root <<SQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MARIADB_ROOT_PASSWD}';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+SQL
+  elif [[ "$auth_mode" == "tcp" ]]; then
+    mysql --port="${MARIADB_PORT}" -u root <<SQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MARIADB_ROOT_PASSWD}';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+SQL
+  else
+    mysql --defaults-file=/root/.my.cnf --port="${MARIADB_PORT}" <<SQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY '${MARIADB_ROOT_PASSWD}';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+SQL
+  fi
 
   cat > /root/.my.cnf <<CNF
 [client]
 user=root
 password=${MARIADB_ROOT_PASSWD}
+host=127.0.0.1
 port=${MARIADB_PORT}
 CNF
   chmod 600 /root/.my.cnf
